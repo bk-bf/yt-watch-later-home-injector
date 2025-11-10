@@ -56,13 +56,13 @@ Caching and message-routing between background and content script.
 ### 4. Content script: detection & injection
 Detect homepage feed and inject a shelf using MutationObserver without blocking initial render.
 
-- [ ] 4.1 Feed detection & robust injection
+- [x] 4.1 Feed detection & robust injection
   - Use a non-blocking startup: wait for the feed container sentinel (or a short safe delay), then attach a MutationObserver to detect SPA navigations and feed re-rendering.
   - Implement a safe insertion strategy: create nodes off-DOM and insert before first feed card.
   - _Reqs: Components and responsibilities, UI/DOM injection details, Edge cases_
 
-- [ ] 4.2 Shelf DOM structure & focus behavior
-  - Build a shelf with header: `In Your Watch Later` + `View All` link to playlist URL.
+- [x] 4.2 Shelf DOM structure & focus behavior
+  - Build a shelf with header: `In Your Watch Later`
   - Carousel container: horizontally scrollable region showing 3–5 visible cards depending on viewport.
   - Cards must be focusable and support keyboard left/right traversal inside the carousel.
   - Preserve native link behavior (anchors) so right-click and middle-click work as normal.

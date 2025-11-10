@@ -176,6 +176,12 @@
         </div>
     </div>
 
+    <!-- Load mock Chrome API first -->
+    <script src="mockChromeApi.js"></script>
+    
+    <!-- Load injector CSS -->
+    <link rel="stylesheet" href="injector.css">
+    
     <!-- Load the content script for testing -->
     <script src="injector.js"></script>
 
@@ -184,6 +190,12 @@
         console.log('%c🔧 Mock YouTube Dev Harness Loaded', 'background: #065fd4; color: white; padding: 4px 8px; border-radius: 3px;');
         console.log('Feed container:', document.querySelector('#contents'));
         console.log('Extension should inject Watch Later shelf as first child of #contents');
+        console.log('');
+        console.log('Test different states in console:');
+        console.log('  _wliMock.testAuthPrompt()  - Show sign-in prompt');
+        console.log('  _wliMock.testEmptyPlaylist() - Show empty state');
+        console.log('  _wliMock.testError()       - Show error state');
+        console.log('  _wliMock.reset()           - Reset to normal');
     </script>
 </body>
 

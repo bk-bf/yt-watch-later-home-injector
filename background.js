@@ -277,13 +277,13 @@ async function getSettings() {
     try {
         const result = await chrome.storage.sync.get(SETTINGS_KEY);
         const settings = result[SETTINGS_KEY] || {};
-        
+
         // Merge with defaults
         const mergedSettings = { ...DEFAULT_SETTINGS, ...settings };
-        
+
         console.log('[Settings] Loaded settings:', mergedSettings);
         return mergedSettings;
-        
+
     } catch (error) {
         console.error('[Settings] Error reading settings:', error);
         return DEFAULT_SETTINGS;
@@ -304,15 +304,15 @@ async function saveSettings(settings) {
             cacheTTL: (settings.cacheTTL >= 5 && settings.cacheTTL <= 60) ? settings.cacheTTL : DEFAULT_SETTINGS.cacheTTL,
             showEmptyState: typeof settings.showEmptyState === 'boolean' ? settings.showEmptyState : DEFAULT_SETTINGS.showEmptyState
         };
-        
+
         await chrome.storage.sync.set({ [SETTINGS_KEY]: validatedSettings });
-        
+
         // Also update cache TTL in local storage for cache functions
         await chrome.storage.local.set({ [CACHE_TTL_KEY]: validatedSettings.cacheTTL });
-        
+
         console.log('[Settings] Settings saved:', validatedSettings);
         return true;
-        
+
     } catch (error) {
         console.error('[Settings] Error saving settings:', error);
         return false;
@@ -442,37 +442,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 case 'GET_SETTINGS':
                     // Get user settings
                     const settings = await getSettings();
-                    sendResponse({ 
-                        success: true, 
-                        settings: settings 
+                    sendResponse({
+                        success: true,
+                        settings: settings
                     });
                     break;
 
                 case 'SAVE_SETTINGS':
                     // Save user settings
                     if (!message.settings) {
-                        sendResponse({ 
-                            success: false, 
-                            error: 'Settings object required' 
+                        sendResponse({
+                            success: false,
+                            error: 'Settings object required'
                         });
                         break;
                     }
-                    
+
                     const saved = await saveSettings(message.settings);
                     if (saved) {
                         // Notify all tabs about settings change
                         const tabs = await chrome.tabs.query({ url: '*://www.youtube.com/*' });
                         tabs.forEach(tab => {
-                            chrome.tabs.sendMessage(tab.id, { 
+                            chrome.tabs.sendMessage(tab.id, {
                                 type: 'SETTINGS_UPDATED',
-                                settings: message.settings 
+                                settings: message.settings
                             }).catch(() => {
                                 // Tab might not have content script loaded, ignore error
                             });
                         });
                     }
-                    
-                    sendResponse({ 
+
+                    sendResponse({
                         success: saved,
                         settings: saved ? message.settings : null
                     });
@@ -485,16 +485,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         // Notify all tabs about settings reset
                         const tabs = await chrome.tabs.query({ url: '*://www.youtube.com/*' });
                         tabs.forEach(tab => {
-                            chrome.tabs.sendMessage(tab.id, { 
+                            chrome.tabs.sendMessage(tab.id, {
                                 type: 'SETTINGS_UPDATED',
-                                settings: DEFAULT_SETTINGS 
+                                settings: DEFAULT_SETTINGS
                             }).catch(() => {
                                 // Tab might not have content script loaded, ignore error
                             });
                         });
                     }
-                    
-                    sendResponse({ 
+
+                    sendResponse({
                         success: reset,
                         settings: reset ? DEFAULT_SETTINGS : null
                     });
