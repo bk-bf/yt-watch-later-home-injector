@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -101,10 +102,11 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Dev info banner -->
     <div class="dev-banner">
-        🔧 <strong>Dev Harness:</strong> Mock YouTube page for testing extension injection. 
+        🔧 <strong>Dev Harness:</strong> Mock YouTube page for testing extension injection.
         The shelf should appear above the feed. Check console for <code>injector.js</code> logs.
     </div>
 
@@ -116,7 +118,7 @@
     <!-- Main feed container - extension injects here -->
     <div id="contents">
         <!-- Extension will inject the Watch Later shelf here as the first child -->
-        
+
         <div class="mock-feed-grid">
             <!-- Mock video card 1 -->
             <div class="mock-video-card">
@@ -184,4 +186,5 @@
         console.log('Extension should inject Watch Later shelf as first child of #contents');
     </script>
 </body>
+
 </html>
