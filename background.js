@@ -15,6 +15,7 @@ const DEFAULT_SETTINGS = {
     itemCount: 5,
     cacheTTL: 20, // minutes
     thumbnailSize: 'compact', // 'compact' (210px) or 'large' (360px)
+    sortOrder: 'descending', // 'descending' (newest first) or 'ascending' (oldest first)
     showEmptyState: true,
     autoRefresh: true // Auto-refresh when visiting Watch Later page
 };
@@ -320,15 +321,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         case 'WATCH_LATER_UPDATED':
             // Notify from scraper that data was updated
-            console.log(`[Background] Watch Later data updated: ${message.count} videos`);
+            console.log(`[Background] 🔄 Watch Later data updated: ${message.count} videos`);
 
             // Notify all YouTube tabs to refresh
             chrome.tabs.query({ url: '*://www.youtube.com/*' }).then(tabs => {
+                console.log(`[Background] Notifying ${tabs.length} YouTube tabs about data refresh`);
                 for (const tab of tabs) {
+                    console.log(`[Background] Sending DATA_REFRESHED to tab ${tab.id} (${tab.url})`);
                     chrome.tabs.sendMessage(tab.id, {
                         type: 'DATA_REFRESHED',
                         count: message.count
-                    }).catch(() => { });
+                    }).catch((err) => { 
+                        console.log(`[Background] Could not send to tab ${tab.id}:`, err.message);
+                    });
                 }
             });
 

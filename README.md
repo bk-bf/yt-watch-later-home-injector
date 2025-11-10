@@ -114,7 +114,7 @@ For developers who want to contribute or modify:
 
 **Testing:** Open `mock-youtube.html` for local testing without YouTube
 **Debugging:** Check console logs prefixed with `[WLI]` (injector) or `[WL Scraper]`
-**Structure:** See `.kiro/tasks.md` for complete implementation details
+**Structure:** See `.kiro/` for complete implementation details
 
 ## License
 

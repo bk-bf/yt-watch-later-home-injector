@@ -98,7 +98,7 @@
     overflow-x: auto;
     overflow-y: hidden;
     scroll-behavior: smooth;
-    padding: var(--wli-spacing-xs) 0;
+    padding: var(--wli-spacing-xs) var(--wli-spacing-xs);
     -webkit-overflow-scrolling: touch;
     position: relative;
     /* Use GPU acceleration for smooth scrolling */

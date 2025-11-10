@@ -144,6 +144,15 @@
         </div>
 
         <div class="setting">
+            <label for="sortOrder">Video order:</label>
+            <select id="sortOrder">
+                <option value="descending">Newest First (most recently added)</option>
+                <option value="ascending">Oldest First (earliest added)</option>
+            </select>
+            <div class="description">Choose which videos appear first in the shelf</div>
+        </div>
+
+        <div class="setting">
             <label for="showEmptyState">
                 <div class="checkbox-label">
                     <input type="checkbox" id="showEmptyState">
@@ -166,6 +175,7 @@
         <div>
             <button id="save">Save Settings</button>
             <button id="reset" class="secondary">Reset to Defaults</button>
+            <button id="refresh" class="secondary">Refresh Watch Later Now</button>
         </div>
 
         <div id="status" class="status"></div>

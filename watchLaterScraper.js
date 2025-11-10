@@ -256,6 +256,155 @@
     }
 
     /**
+     * Listen for playlist content changes (videos added/removed)
+     * Uses multiple strategies to detect changes
+     */
+    function setupPlaylistChangeListener() {
+        let lastVideoIds = new Set();
+        let debounceTimeout = null;
+        let pollInterval = null;
+        let playlistObserver = null;
+
+        const checkAndUpdatePlaylist = () => {
+            // CRITICAL: Only run if we're still on Watch Later page
+            if (!location.href.includes('list=WL')) {
+                console.log('[WL Scraper] Not on Watch Later page anymore, stopping checks');
+                cleanup();
+                return;
+            }
+
+            // Clear existing timeout
+            if (debounceTimeout) {
+                clearTimeout(debounceTimeout);
+            }
+
+            // Debounce to avoid excessive re-scraping during rapid changes
+            debounceTimeout = setTimeout(() => {
+                console.log('[WL Scraper] Checking for playlist changes...');
+                const videos = extractWatchLaterData();
+                
+                if (!videos) {
+                    console.warn('[WL Scraper] Could not extract video data');
+                    return;
+                }
+
+                const currentVideoIds = new Set(videos.map(v => v.videoId));
+
+                // Compare with stored data
+                if (lastVideoIds.size > 0) {
+                    const added = [...currentVideoIds].filter(id => !lastVideoIds.has(id));
+                    const removed = [...lastVideoIds].filter(id => !currentVideoIds.has(id));
+
+                    if (added.length > 0 || removed.length > 0) {
+                        console.log(`[WL Scraper] ⚠️ Playlist changed! Added: ${added.length}, Removed: ${removed.length}`);
+                        console.log(`[WL Scraper] Total videos: ${lastVideoIds.size} → ${currentVideoIds.size}`);
+                        lastVideoIds = currentVideoIds;
+                        scrapeWatchLater();
+                        return;
+                    }
+                }
+
+                // Initialize tracking on first check
+                if (lastVideoIds.size === 0) {
+                    lastVideoIds = currentVideoIds;
+                    console.log(`[WL Scraper] Initialized tracking with ${currentVideoIds.size} videos`);
+                }
+            }, 800); // Wait 800ms after last change
+        };
+
+        const cleanup = () => {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+            if (playlistObserver) {
+                playlistObserver.disconnect();
+                playlistObserver = null;
+            }
+            if (debounceTimeout) {
+                clearTimeout(debounceTimeout);
+                debounceTimeout = null;
+            }
+            console.log('[WL Scraper] Change detection cleaned up');
+        };
+
+        // Strategy 1: Watch for DOM mutations in playlist area
+        playlistObserver = new MutationObserver((mutations) => {
+            // Guard: only process if still on Watch Later page
+            if (!location.href.includes('list=WL')) {
+                cleanup();
+                return;
+            }
+
+            const hasRelevantChange = mutations.some(mutation => {
+                // Check for removed nodes (video deleted)
+                if (mutation.removedNodes.length > 0) {
+                    for (let node of mutation.removedNodes) {
+                        if (node instanceof Element && 
+                            (node.tagName === 'YTD-PLAYLIST-VIDEO-RENDERER' ||
+                             node.querySelector('ytd-playlist-video-renderer'))) {
+                            return true;
+                        }
+                    }
+                }
+                // Check for added nodes (video added)
+                if (mutation.addedNodes.length > 0) {
+                    for (let node of mutation.addedNodes) {
+                        if (node instanceof Element && 
+                            (node.tagName === 'YTD-PLAYLIST-VIDEO-RENDERER' ||
+                             node.querySelector('ytd-playlist-video-renderer'))) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            });
+
+            if (hasRelevantChange) {
+                console.log('[WL Scraper] 🔍 Playlist DOM mutation detected');
+                checkAndUpdatePlaylist();
+            }
+        });
+
+        // Strategy 2: Periodic polling as fallback (only while on Watch Later page)
+        pollInterval = setInterval(() => {
+            if (!location.href.includes('list=WL')) {
+                cleanup();
+                return;
+            }
+            checkAndUpdatePlaylist();
+        }, 3000); // Check every 3 seconds
+
+        // Start observing
+        setTimeout(() => {
+            if (!location.href.includes('list=WL')) {
+                console.log('[WL Scraper] Page changed before observer setup, aborting');
+                cleanup();
+                return;
+            }
+
+            const contents = document.querySelector('#contents');
+            if (contents) {
+                playlistObserver.observe(contents, {
+                    childList: true,
+                    subtree: true,
+                    attributes: false
+                });
+                console.log('[WL Scraper] ✓ Playlist change detection active (DOM observer + polling)');
+                
+                // Do initial check
+                checkAndUpdatePlaylist();
+            } else {
+                console.warn('[WL Scraper] ⚠️ Could not find #contents container, using polling only');
+                checkAndUpdatePlaylist();
+            }
+        }, 2000);
+
+        // Cleanup on navigation away
+        window.addEventListener('beforeunload', cleanup);
+    }
+
+    /**
      * Initialize scraper
      */
     function init() {
@@ -272,6 +421,9 @@
 
         // Setup listener for SPA navigation
         setupNavigationListener();
+
+        // Setup listener for playlist content changes (add/remove videos)
+        setupPlaylistChangeListener();
 
         // Listen for manual refresh requests
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

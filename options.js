@@ -8,6 +8,7 @@ const DEFAULT_SETTINGS = {
     itemCount: 5,
     cacheTTL: 20,
     thumbnailSize: 'compact',
+    sortOrder: 'descending',
     showEmptyState: true,
     autoRefresh: true
 };
@@ -26,6 +27,7 @@ async function loadSettings() {
             document.getElementById('itemCount').value = settings.itemCount;
             document.getElementById('cacheTTL').value = settings.cacheTTL;
             document.getElementById('thumbnailSize').value = settings.thumbnailSize || 'compact';
+            document.getElementById('sortOrder').value = settings.sortOrder || 'descending';
             document.getElementById('showEmptyState').checked = settings.showEmptyState;
             document.getElementById('autoRefresh').checked = settings.autoRefresh;
 
@@ -50,6 +52,7 @@ async function saveSettings() {
             itemCount: parseInt(document.getElementById('itemCount').value, 10),
             cacheTTL: parseInt(document.getElementById('cacheTTL').value, 10),
             thumbnailSize: document.getElementById('thumbnailSize').value,
+            sortOrder: document.getElementById('sortOrder').value,
             showEmptyState: document.getElementById('showEmptyState').checked,
             autoRefresh: document.getElementById('autoRefresh').checked
         };
@@ -121,6 +124,27 @@ function showStatus(message, type) {
 }
 
 /**
+ * Refresh Watch Later data
+ */
+async function refreshWatchLater() {
+    try {
+        showStatus('Refreshing Watch Later data...', 'success');
+
+        const response = await chrome.runtime.sendMessage({ type: 'REFRESH_WATCH_LATER' });
+
+        if (response.success) {
+            console.log('[Options] Watch Later data refreshed');
+            showStatus('Watch Later data refreshed! Reload the YouTube homepage to see changes.', 'success');
+        } else {
+            showStatus('Failed to refresh data: ' + (response.error || 'Unknown error'), 'error');
+        }
+    } catch (error) {
+        console.error('[Options] Error refreshing data:', error);
+        showStatus('Error refreshing data', 'error');
+    }
+}
+
+/**
  * Initialize options page
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -129,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event listeners
     document.getElementById('save').addEventListener('click', saveSettings);
     document.getElementById('reset').addEventListener('click', resetSettings);
+    document.getElementById('refresh').addEventListener('click', refreshWatchLater);
 
     // Real-time validation
     document.getElementById('itemCount').addEventListener('input', (e) => {

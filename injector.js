@@ -8,6 +8,7 @@ let shelfInjected = false;
 let currentSettings = null;
 let observer = null;
 let isYouTubeHomepage = false;
+let injectionTimeout = null; // For debouncing injection requests
 
 // Constants
 const WATCH_LATER_SHELF_ID = 'wli-watch-later-shelf';
@@ -22,6 +23,9 @@ const WATCH_LATER_PLAYLIST_URL = 'https://www.youtube.com/playlist?list=WL';
 async function init() {
     console.log('[WLI] Content script loaded');
 
+    // Load settings first
+    await loadSettings();
+
     // Check if we're on YouTube homepage
     if (!isHomepage()) {
         console.log('[WLI] Not on homepage, skipping injection');
@@ -31,12 +35,10 @@ async function init() {
     isYouTubeHomepage = true;
     console.log('[WLI] On YouTube homepage, initializing...');
 
-    // Load settings
-    await loadSettings();
-
     // Check if shelf is enabled
     if (!currentSettings?.enabled) {
         console.log('[WLI] Shelf is disabled in settings');
+        setupNavigationObserver(); // Still need observer
         return;
     }
 
@@ -72,6 +74,7 @@ function isHomepage() {
         (pathname === '' && url.includes('youtube.com'));
 }
 
+
 /**
  * Load settings from background
  * @returns {Promise<void>}
@@ -88,12 +91,13 @@ async function loadSettings() {
                 enabled: true,
                 itemCount: 5,
                 cacheTTL: 20,
+                sortOrder: 'descending',
                 showEmptyState: true
             };
         }
     } catch (error) {
         console.error('[WLI] Error loading settings:', error);
-        currentSettings = { enabled: true, itemCount: 5, cacheTTL: 20, showEmptyState: true };
+        currentSettings = { enabled: true, itemCount: 5, cacheTTL: 20, sortOrder: 'descending', showEmptyState: true };
     }
 }
 
@@ -129,6 +133,23 @@ function waitForFeedContainer() {
 }
 
 /**
+ * Debounced injection - prevents multiple rapid injection attempts
+ * @param {number} delay - Delay in milliseconds
+ */
+function scheduleInjection(delay = 300) {
+    // Clear any existing timeout
+    if (injectionTimeout) {
+        clearTimeout(injectionTimeout);
+    }
+
+    // Schedule new injection
+    injectionTimeout = setTimeout(() => {
+        injectionTimeout = null;
+        injectShelf();
+    }, delay);
+}
+
+/**
  * Setup MutationObserver to detect SPA navigation and feed re-renders
  */
 function setupNavigationObserver() {
@@ -145,21 +166,37 @@ function setupNavigationObserver() {
 
         // URL changed - check if we're still on homepage
         if (currentUrl !== lastUrl) {
+            const previousUrl = lastUrl;
             lastUrl = currentUrl;
-            console.log('[WLI] Navigation detected:', currentUrl);
+            console.log('[WLI] Navigation detected:', previousUrl, '→', currentUrl);
 
             const wasHomepage = isYouTubeHomepage;
+            const wasWatchLater = previousUrl.includes('list=WL');
             isYouTubeHomepage = isHomepage();
 
             if (isYouTubeHomepage && !wasHomepage) {
                 // Navigated to homepage
-                console.log('[WLI] Navigated to homepage, re-injecting shelf');
-                shelfInjected = false;
-                setTimeout(() => injectShelf(), 500); // Small delay for feed to load
+                if (wasWatchLater) {
+                    console.log('[WLI] 🔄 Navigated from Watch Later to homepage - forcing refresh');
+                    // Coming from Watch Later, wait a bit longer for scraper to finish
+                    shelfInjected = false;
+                    removeShelf();
+                    scheduleInjection(400);
+                } else {
+                    console.log('[WLI] Navigated to homepage, scheduling re-injection');
+                    shelfInjected = false;
+                    removeShelf();
+                    scheduleInjection(500);
+                }
             } else if (!isYouTubeHomepage && wasHomepage) {
                 // Navigated away from homepage
                 console.log('[WLI] Navigated away from homepage');
                 removeShelf();
+                
+                // If navigating to Watch Later, remind user to refresh if they made changes
+                if (currentUrl.includes('list=WL')) {
+                    console.log('[WLI] 📋 On Watch Later page - refresh page (Cmd+Shift+R) if you add/remove videos to update the homepage shelf');
+                }
             }
         }
 
@@ -167,9 +204,9 @@ function setupNavigationObserver() {
         if (isYouTubeHomepage && shelfInjected) {
             const existingShelf = document.getElementById(WATCH_LATER_SHELF_ID);
             if (!existingShelf) {
-                console.log('[WLI] Shelf removed by feed re-render, re-injecting');
+                console.log('[WLI] Shelf removed by feed re-render, scheduling re-injection');
                 shelfInjected = false;
-                injectShelf();
+                scheduleInjection(100);
             }
         }
     });
@@ -185,12 +222,20 @@ function setupNavigationObserver() {
 
 /**
  * Main injection function - fetches data and creates shelf
+ * Debounced to prevent multiple rapid injection attempts
  */
 async function injectShelf() {
+    // Clear any pending injection
+    if (injectionTimeout) {
+        clearTimeout(injectionTimeout);
+        injectionTimeout = null;
+    }
+
     // Prevent duplicate injection
     if (shelfInjected) {
-        console.log('[WLI] Shelf already injected');
-        return;
+        console.log('[WLI] Shelf already injected, forcing re-injection');
+        shelfInjected = false;
+        removeShelf();
     }
 
     // Check if settings allow injection
@@ -226,8 +271,12 @@ async function injectShelf() {
             return;
         }
 
-        const videos = response.videos || [];
-        console.log(`[WLI] Got ${videos.length} videos (from cache: ${response.fromCache})`);
+        let videos = response.videos || [];
+        console.log(`[WLI] Got ${videos.length} videos (from cache: ${response.fromCache}, timestamp: ${response.timestamp})`);
+        if (videos.length > 0) {
+            console.log(`[WLI] First video: "${videos[0].title}" (${videos[0].videoId})`);
+            console.log(`[WLI] Last video: "${videos[videos.length - 1].title}" (${videos[videos.length - 1].videoId})`);
+        }
 
         // Handle empty playlist
         if (videos.length === 0) {
@@ -239,6 +288,21 @@ async function injectShelf() {
             }
             return;
         }
+
+        // Apply sort order (newest first by default)
+        const sortOrder = currentSettings?.sortOrder || 'descending';
+        if (sortOrder === 'descending') {
+            // Reverse to show newest videos first (YouTube adds newest at the end)
+            videos = videos.slice().reverse();
+            console.log('[WLI] Sorted videos: newest first (descending)');
+        } else {
+            console.log('[WLI] Sorted videos: oldest first (ascending)');
+        }
+
+        // Limit to configured item count
+        const itemCount = currentSettings?.itemCount || 5;
+        videos = videos.slice(0, itemCount);
+        console.log(`[WLI] Displaying ${videos.length} videos (limit: ${itemCount})`);
 
         const shelf = createShelf(videos);
         insertShelfSafely(feedContainer, shelf);
@@ -682,7 +746,7 @@ function removeShelf() {
 }
 
 /**
- * Handle settings updates from background
+ * Handle messages from background
  */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'SETTINGS_UPDATED') {
@@ -694,7 +758,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             shelfInjected = false;
             removeShelf();
             if (currentSettings.enabled) {
-                injectShelf();
+                scheduleInjection(200);
+            }
+        }
+    } else if (message.type === 'DATA_REFRESHED') {
+        console.log('[WLI] 🔄 DATA_REFRESHED received:', message.count, 'videos');
+        console.log('[WLI] Current state: isYouTubeHomepage =', isYouTubeHomepage, ', enabled =', currentSettings?.enabled);
+        
+        // ALWAYS re-inject when data refreshes, even if not currently on homepage
+        // (it might be a navigation in progress)
+        if (currentSettings?.enabled) {
+            console.log('[WLI] Force re-injection with fresh Watch Later data');
+            shelfInjected = false;
+            removeShelf();
+            
+            // Check if we're on homepage NOW (URL might have just changed)
+            if (isHomepage()) {
+                isYouTubeHomepage = true;
+                console.log('[WLI] Confirmed on homepage, injecting immediately');
+                scheduleInjection(100); // Very short delay
+            } else {
+                console.log('[WLI] Not on homepage yet, will inject when navigation completes');
             }
         }
     }
