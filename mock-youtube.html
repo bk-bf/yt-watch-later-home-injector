@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock YouTube Homepage - Dev Harness</title>
+    <style>
+        /* Minimal YouTube-like styles for testing */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Roboto", "Arial", sans-serif;
+            background-color: #0f0f0f;
+            color: #f1f1f1;
+            padding: 0;
+        }
+
+        /* Mock YouTube header */
+        .mock-header {
+            background-color: #212121;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px solid #3f3f3f;
+        }
+
+        .mock-header h1 {
+            font-size: 18px;
+            color: #aaa;
+            font-weight: 400;
+        }
+
+        /* Mock feed container - this is where extension will inject */
+        #contents {
+            max-width: 1754px;
+            margin: 24px auto;
+            padding: 0 24px;
+        }
+
+        /* Mock video cards */
+        .mock-video-card {
+            background-color: #212121;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 40px;
+        }
+
+        .mock-thumbnail {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        .mock-video-info {
+            padding: 12px;
+        }
+
+        .mock-video-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .mock-video-meta {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        /* Grid layout for feed */
+        .mock-feed-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        /* Dev info banner */
+        .dev-banner {
+            background-color: #065fd4;
+            color: white;
+            padding: 12px 16px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .dev-banner code {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <!-- Dev info banner -->
+    <div class="dev-banner">
+        🔧 <strong>Dev Harness:</strong> Mock YouTube page for testing extension injection. 
+        The shelf should appear above the feed. Check console for <code>injector.js</code> logs.
+    </div>
+
+    <!-- Mock YouTube header -->
+    <div class="mock-header">
+        <h1>▶ YouTube (Mock)</h1>
+    </div>
+
+    <!-- Main feed container - extension injects here -->
+    <div id="contents">
+        <!-- Extension will inject the Watch Later shelf here as the first child -->
+        
+        <div class="mock-feed-grid">
+            <!-- Mock video card 1 -->
+            <div class="mock-video-card">
+                <div class="mock-thumbnail">Mock Thumbnail 1</div>
+                <div class="mock-video-info">
+                    <div class="mock-video-title">Sample Video Title That Might Be Long</div>
+                    <div class="mock-video-meta">Channel Name • 123K views • 2 days ago</div>
+                </div>
+            </div>
+
+            <!-- Mock video card 2 -->
+            <div class="mock-video-card">
+                <div class="mock-thumbnail">Mock Thumbnail 2</div>
+                <div class="mock-video-info">
+                    <div class="mock-video-title">Another Interesting Video Title</div>
+                    <div class="mock-video-meta">Cool Creator • 456K views • 1 week ago</div>
+                </div>
+            </div>
+
+            <!-- Mock video card 3 -->
+            <div class="mock-video-card">
+                <div class="mock-thumbnail">Mock Thumbnail 3</div>
+                <div class="mock-video-info">
+                    <div class="mock-video-title">Third Video in the Feed</div>
+                    <div class="mock-video-meta">Test Channel • 789K views • 3 days ago</div>
+                </div>
+            </div>
+
+            <!-- Mock video card 4 -->
+            <div class="mock-video-card">
+                <div class="mock-thumbnail">Mock Thumbnail 4</div>
+                <div class="mock-video-info">
+                    <div class="mock-video-title">More Content Here</div>
+                    <div class="mock-video-meta">Another Channel • 234K views • 5 hours ago</div>
+                </div>
+            </div>
+
+            <!-- Mock video card 5 -->
+            <div class="mock-video-card">
+                <div class="mock-thumbnail">Mock Thumbnail 5</div>
+                <div class="mock-video-info">
+                    <div class="mock-video-title">Yet Another Video Title</div>
+                    <div class="mock-video-meta">Demo Creator • 567K views • 1 day ago</div>
+                </div>
+            </div>
+
+            <!-- Mock video card 6 -->
+            <div class="mock-video-card">
+                <div class="mock-thumbnail">Mock Thumbnail 6</div>
+                <div class="mock-video-info">
+                    <div class="mock-video-title">Final Video Card</div>
+                    <div class="mock-video-meta">Test User • 890K views • 4 days ago</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load the content script for testing -->
+    <script src="injector.js"></script>
+
+    <script>
+        // Dev console helper
+        console.log('%c🔧 Mock YouTube Dev Harness Loaded', 'background: #065fd4; color: white; padding: 4px 8px; border-radius: 3px;');
+        console.log('Feed container:', document.querySelector('#contents'));
+        console.log('Extension should inject Watch Later shelf as first child of #contents');
+    </script>
+</body>
+</html>
