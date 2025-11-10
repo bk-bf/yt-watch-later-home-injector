@@ -22,7 +22,7 @@ Create minimal extension scaffolding and dev-run harness.
   - Add `oauth2` client info placeholder if needed in manifest for review.
   - _Reqs: NFR-3, Implementation constraints_
 
-- [ ] 1.2 Dev harness / local mock
+- [x] 1.2 Dev harness / local mock
   - Add a simple local `mock-youtube.html` page to test injection without full YouTube (loads content_script for layout testing).
   - Add minimal npm scripts (optional) or README dev steps.
   - _Reqs: Testing strategy_
@@ -30,12 +30,12 @@ Create minimal extension scaffolding and dev-run harness.
 ### 2. Authentication & API wrapper
 Implement chrome.identity flow and a small API wrapper to call YouTube Data API v3.
 
-- [ ] 2.1 chrome.identity integration
+- [x] 2.1 chrome.identity integration
   - Implement `background.js` service worker method to obtain an access token using `chrome.identity.getAuthToken`.
   - Handle common auth errors and present an unobtrusive CTA to sign in when required.
   - _Reqs: FR-1, Privacy & security_
 
-- [ ] 2.2 YouTube API wrapper
+- [x] 2.2 YouTube API wrapper
   - Create `youtubeApi.js` that requests `playlistItems.list` for playlist ID `WL` (Watch Later). Request minimal fields: `snippet(resourceId/videoId,title,thumbnails,channelTitle,publishedAt)`.
   - Implement simple retries/backoff for transient 5xx responses.
   - _Reqs: FR-2, YouTube Data API usage_
