@@ -192,7 +192,7 @@ function setupNavigationObserver() {
                 // Navigated away from homepage
                 console.log('[WLI] Navigated away from homepage');
                 removeShelf();
-                
+
                 // If navigating to Watch Later, remind user to refresh if they made changes
                 if (currentUrl.includes('list=WL')) {
                     console.log('[WLI] 📋 On Watch Later page - refresh page (Cmd+Shift+R) if you add/remove videos to update the homepage shelf');
@@ -764,14 +764,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     } else if (message.type === 'DATA_REFRESHED') {
         console.log('[WLI] 🔄 DATA_REFRESHED received:', message.count, 'videos');
         console.log('[WLI] Current state: isYouTubeHomepage =', isYouTubeHomepage, ', enabled =', currentSettings?.enabled);
-        
+
         // ALWAYS re-inject when data refreshes, even if not currently on homepage
         // (it might be a navigation in progress)
         if (currentSettings?.enabled) {
             console.log('[WLI] Force re-injection with fresh Watch Later data');
             shelfInjected = false;
             removeShelf();
-            
+
             // Check if we're on homepage NOW (URL might have just changed)
             if (isHomepage()) {
                 isYouTubeHomepage = true;

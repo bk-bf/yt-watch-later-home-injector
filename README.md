@@ -32,7 +32,6 @@ No API keys, no OAuth flow, no quotas—just instant access to your saved videos
 1. **Download/Clone this repository**
    ```bash
    git clone https://github.com/bk-bf/yt-watch-later-home-injector.git
-   cd yt-watch-later-home-injector
    ```
 
 2. **Load in Chrome/Opera:**

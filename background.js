@@ -331,7 +331,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     chrome.tabs.sendMessage(tab.id, {
                         type: 'DATA_REFRESHED',
                         count: message.count
-                    }).catch((err) => { 
+                    }).catch((err) => {
                         console.log(`[Background] Could not send to tab ${tab.id}:`, err.message);
                     });
                 }

@@ -282,7 +282,7 @@
             debounceTimeout = setTimeout(() => {
                 console.log('[WL Scraper] Checking for playlist changes...');
                 const videos = extractWatchLaterData();
-                
+
                 if (!videos) {
                     console.warn('[WL Scraper] Could not extract video data');
                     return;
@@ -340,9 +340,9 @@
                 // Check for removed nodes (video deleted)
                 if (mutation.removedNodes.length > 0) {
                     for (let node of mutation.removedNodes) {
-                        if (node instanceof Element && 
+                        if (node instanceof Element &&
                             (node.tagName === 'YTD-PLAYLIST-VIDEO-RENDERER' ||
-                             node.querySelector('ytd-playlist-video-renderer'))) {
+                                node.querySelector('ytd-playlist-video-renderer'))) {
                             return true;
                         }
                     }
@@ -350,9 +350,9 @@
                 // Check for added nodes (video added)
                 if (mutation.addedNodes.length > 0) {
                     for (let node of mutation.addedNodes) {
-                        if (node instanceof Element && 
+                        if (node instanceof Element &&
                             (node.tagName === 'YTD-PLAYLIST-VIDEO-RENDERER' ||
-                             node.querySelector('ytd-playlist-video-renderer'))) {
+                                node.querySelector('ytd-playlist-video-renderer'))) {
                             return true;
                         }
                     }
@@ -391,7 +391,7 @@
                     attributes: false
                 });
                 console.log('[WL Scraper] ✓ Playlist change detection active (DOM observer + polling)');
-                
+
                 // Do initial check
                 checkAndUpdatePlaylist();
             } else {
