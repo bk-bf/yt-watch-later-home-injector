@@ -1,18 +1,11 @@
 /**
  * Background Service Worker
- * Handles authentication, API calls, caching, and messaging with content scripts
+ * Handles data management, caching, and messaging with content scripts
+ * Note: No longer uses OAuth or YouTube API - data is scraped from Watch Later page
  */
 
-// Import YouTube API wrapper
-importScripts('youtubeApi.js');
-
-// Authentication state
-let cachedToken = null;
-let tokenExpiryTime = null;
-
 // Cache configuration
-const CACHE_KEY = 'watchLaterCache';
-const CACHE_TTL_KEY = 'cacheTTL';
+const CACHE_KEY = 'watchLaterData';
 const DEFAULT_CACHE_TTL = 20 * 60 * 1000; // 20 minutes in milliseconds
 
 // Settings keys and defaults
@@ -21,296 +14,160 @@ const DEFAULT_SETTINGS = {
     enabled: true,
     itemCount: 5,
     cacheTTL: 20, // minutes
-    showEmptyState: true
+    showEmptyState: true,
+    autoRefresh: true // Auto-refresh when visiting Watch Later page
 };
 
 /**
- * Get OAuth access token using Chrome Identity API
- * @param {boolean} interactive - Whether to show auth UI if needed
- * @returns {Promise<string|null>} Access token or null on error
+ * Get Watch Later data from storage
+ * @returns {Promise<Object|null>} Scraped Watch Later data or null
  */
-async function getAuthToken(interactive = false) {
-    try {
-        // Check if we have a valid cached token
-        if (cachedToken && tokenExpiryTime && Date.now() < tokenExpiryTime) {
-            console.log('[Auth] Using cached token');
-            return cachedToken;
-        }
-
-        console.log(`[Auth] Requesting new token (interactive: ${interactive})`);
-
-        // Request token from Chrome Identity API
-        const token = await chrome.identity.getAuthToken({
-            interactive: interactive
-        });
-
-        if (token) {
-            cachedToken = token;
-            // Tokens typically expire in 1 hour, cache for 50 minutes to be safe
-            tokenExpiryTime = Date.now() + (50 * 60 * 1000);
-            console.log('[Auth] Token obtained successfully');
-            return token;
-        }
-
-        console.warn('[Auth] No token returned');
-        return null;
-
-    } catch (error) {
-        console.error('[Auth] Error getting token:', error);
-
-        // Handle specific error cases
-        if (error.message?.includes('OAuth2 not granted or revoked')) {
-            console.warn('[Auth] User needs to grant permissions');
-            return null;
-        }
-
-        if (error.message?.includes('OAuth2 client ID')) {
-            console.error('[Auth] Invalid OAuth2 client ID in manifest.json');
-            console.error('[Auth] Replace YOUR_CLIENT_ID_HERE with actual client ID');
-            return null;
-        }
-
-        // Clear cached token on error
-        cachedToken = null;
-        tokenExpiryTime = null;
-
-        return null;
-    }
-}
-
-/**
- * Revoke the current auth token and clear cache
- * Useful for forcing re-authentication
- */
-async function revokeAuthToken() {
-    if (cachedToken) {
-        try {
-            await chrome.identity.removeCachedAuthToken({ token: cachedToken });
-            console.log('[Auth] Token revoked successfully');
-        } catch (error) {
-            console.error('[Auth] Error revoking token:', error);
-        }
-    }
-
-    cachedToken = null;
-    tokenExpiryTime = null;
-}
-
-/**
- * Check authentication status without triggering interactive flow
- * @returns {Promise<{authenticated: boolean, needsAuth: boolean}>}
- */
-async function checkAuthStatus() {
-    const token = await getAuthToken(false);
-
-    return {
-        authenticated: !!token,
-        needsAuth: !token
-    };
-}
-
-/**
- * Trigger interactive authentication flow
- * Called when user explicitly wants to sign in
- * @returns {Promise<{success: boolean, token: string|null, error: string|null}>}
- */
-async function triggerInteractiveAuth() {
-    console.log('[Auth] Starting interactive authentication flow');
-
-    try {
-        const token = await getAuthToken(true);
-
-        if (token) {
-            return {
-                success: true,
-                token: token,
-                error: null
-            };
-        }
-
-        return {
-            success: false,
-            token: null,
-            error: 'No token returned - user may have cancelled'
-        };
-
-    } catch (error) {
-        return {
-            success: false,
-            token: null,
-            error: error.message || 'Authentication failed'
-        };
-    }
-}
-
-/**
- * Get cache TTL from settings or use default
- * @returns {Promise<number>} Cache TTL in milliseconds
- */
-async function getCacheTTL() {
-    try {
-        const result = await chrome.storage.local.get(CACHE_TTL_KEY);
-        const ttlMinutes = result[CACHE_TTL_KEY];
-
-        if (ttlMinutes && typeof ttlMinutes === 'number' && ttlMinutes > 0) {
-            return ttlMinutes * 60 * 1000; // Convert minutes to milliseconds
-        }
-    } catch (error) {
-        console.warn('[Cache] Error reading TTL from storage:', error);
-    }
-
-    return DEFAULT_CACHE_TTL;
-}
-
-/**
- * Get cached playlist items if still valid
- * @returns {Promise<{items: Array, timestamp: number}|null>} Cached data or null if expired/missing
- */
-async function getCachedPlaylist() {
+async function getWatchLaterData() {
     try {
         const result = await chrome.storage.local.get(CACHE_KEY);
-        const cached = result[CACHE_KEY];
+        const data = result[CACHE_KEY];
 
-        if (!cached || !cached.items || !cached.timestamp) {
-            console.log('[Cache] No cached data found');
+        if (!data) {
+            console.log('[Data] No Watch Later data in storage');
             return null;
         }
 
-        const ttl = await getCacheTTL();
-        const age = Date.now() - cached.timestamp;
+        // Check if data is still valid (within TTL)
+        const settings = await getSettings();
+        const ttl = (settings.cacheTTL || 20) * 60 * 1000;
+        const age = Date.now() - data.timestamp;
 
         if (age > ttl) {
-            console.log(`[Cache] Cache expired (age: ${Math.round(age / 1000)}s, TTL: ${Math.round(ttl / 1000)}s)`);
+            console.log(`[Data] Cached data expired (age: ${Math.round(age / 1000)}s, TTL: ${Math.round(ttl / 1000)}s)`);
             return null;
         }
 
-        console.log(`[Cache] Using cached data (age: ${Math.round(age / 1000)}s, ${cached.items.length} items)`);
-        return cached;
+        console.log(`[Data] Returning cached data: ${data.videos?.length || 0} videos`);
+        return data;
 
     } catch (error) {
-        console.error('[Cache] Error reading from storage:', error);
+        console.error('[Data] Error getting Watch Later data:', error);
         return null;
     }
 }
 
 /**
- * Save playlist items to cache
- * @param {Array} items - Playlist items to cache
- * @returns {Promise<boolean>} Success status
+ * Check if Watch Later data exists and is valid
+ * @returns {Promise<boolean>}
  */
-async function setCachedPlaylist(items) {
-    try {
-        const cacheData = {
-            items: items,
-            timestamp: Date.now()
-        };
-
-        await chrome.storage.local.set({ [CACHE_KEY]: cacheData });
-        console.log(`[Cache] Cached ${items.length} items`);
-        return true;
-
-    } catch (error) {
-        console.error('[Cache] Error writing to storage:', error);
-        return false;
-    }
+async function hasValidData() {
+    const data = await getWatchLaterData();
+    return data !== null;
 }
 
 /**
- * Clear cached playlist data
- * @returns {Promise<boolean>} Success status
+ * Clear cached Watch Later data
  */
-async function clearCache() {
+async function clearData() {
     try {
         await chrome.storage.local.remove(CACHE_KEY);
-        console.log('[Cache] Cache cleared');
+        console.log('[Data] Cleared Watch Later data');
         return true;
     } catch (error) {
-        console.error('[Cache] Error clearing cache:', error);
+        console.error('[Data] Error clearing data:', error);
         return false;
     }
 }
 
 /**
- * Fetch Watch Later items with caching
- * @param {boolean} forceRefresh - Force API fetch even if cache is valid
- * @param {number} maxResults - Maximum items to fetch
- * @returns {Promise<{items: Array, fromCache: boolean}>}
+ * Request scraper to refresh Watch Later data
+ * Opens Watch Later page in background tab to trigger scraper
  */
-async function getWatchLaterWithCache(forceRefresh = false, maxResults = 10) {
-    // Check cache first unless force refresh
-    if (!forceRefresh) {
-        const cached = await getCachedPlaylist();
-        if (cached) {
-            return {
-                items: cached.items,
-                fromCache: true,
-                timestamp: cached.timestamp
-            };
-        }
+async function refreshWatchLaterData() {
+    try {
+        console.log('[Refresh] Opening Watch Later page to scrape data...');
+        
+        // Open Watch Later page in a new tab (will trigger scraper)
+        const tab = await chrome.tabs.create({
+            url: 'https://www.youtube.com/playlist?list=WL',
+            active: false // Don't switch to tab
+        });
+
+        // Close the tab after a few seconds (give scraper time to run)
+        setTimeout(async () => {
+            try {
+                await chrome.tabs.remove(tab.id);
+                console.log('[Refresh] Background tab closed');
+            } catch (error) {
+                // Tab may already be closed
+            }
+        }, 3000);
+
+        return { success: true };
+
+    } catch (error) {
+        console.error('[Refresh] Error refreshing data:', error);
+        return { success: false, error: error.message };
     }
-
-    // Fetch fresh data from API
-    console.log('[Cache] Fetching fresh data from API');
-    const token = await getAuthToken(false);
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    const items = await fetchWatchLaterItems(token, maxResults);
-
-    // Cache the fresh data
-    await setCachedPlaylist(items);
-
-    return {
-        items: items,
-        fromCache: false,
-        timestamp: Date.now()
-    };
 }
 
 /**
- * Get user settings with defaults
+ * Get settings from storage or return defaults
  * @returns {Promise<Object>} Settings object
  */
 async function getSettings() {
     try {
-        const result = await chrome.storage.sync.get(SETTINGS_KEY);
-        const settings = result[SETTINGS_KEY] || {};
+        const result = await chrome.storage.local.get(SETTINGS_KEY);
+        const settings = result[SETTINGS_KEY];
 
-        // Merge with defaults
-        const mergedSettings = { ...DEFAULT_SETTINGS, ...settings };
+        if (settings && typeof settings === 'object') {
+            // Merge with defaults to handle any missing keys
+            return { ...DEFAULT_SETTINGS, ...settings };
+        }
 
-        console.log('[Settings] Loaded settings:', mergedSettings);
-        return mergedSettings;
+        console.log('[Settings] Using default settings');
+        return { ...DEFAULT_SETTINGS };
 
     } catch (error) {
         console.error('[Settings] Error reading settings:', error);
-        return DEFAULT_SETTINGS;
+        return { ...DEFAULT_SETTINGS };
     }
 }
 
 /**
- * Save user settings
- * @param {Object} settings - Settings object to save
+ * Save settings to storage
+ * @param {Object} settings - Settings to save
  * @returns {Promise<boolean>} Success status
  */
 async function saveSettings(settings) {
     try {
         // Validate settings
-        const validatedSettings = {
-            enabled: typeof settings.enabled === 'boolean' ? settings.enabled : DEFAULT_SETTINGS.enabled,
-            itemCount: (settings.itemCount >= 3 && settings.itemCount <= 10) ? settings.itemCount : DEFAULT_SETTINGS.itemCount,
-            cacheTTL: (settings.cacheTTL >= 5 && settings.cacheTTL <= 60) ? settings.cacheTTL : DEFAULT_SETTINGS.cacheTTL,
-            showEmptyState: typeof settings.showEmptyState === 'boolean' ? settings.showEmptyState : DEFAULT_SETTINGS.showEmptyState
-        };
+        if (!settings || typeof settings !== 'object') {
+            throw new Error('Invalid settings object');
+        }
 
-        await chrome.storage.sync.set({ [SETTINGS_KEY]: validatedSettings });
+        // Merge with current settings to preserve any unmodified values
+        const currentSettings = await getSettings();
+        const newSettings = { ...currentSettings, ...settings };
 
-        // Also update cache TTL in local storage for cache functions
-        await chrome.storage.local.set({ [CACHE_TTL_KEY]: validatedSettings.cacheTTL });
+        // Validate specific fields
+        if (typeof newSettings.itemCount === 'number') {
+            newSettings.itemCount = Math.max(3, Math.min(10, newSettings.itemCount));
+        }
 
-        console.log('[Settings] Settings saved:', validatedSettings);
+        if (typeof newSettings.cacheTTL === 'number') {
+            newSettings.cacheTTL = Math.max(1, Math.min(1440, newSettings.cacheTTL)); // 1 min to 24 hours
+        }
+
+        await chrome.storage.local.set({ [SETTINGS_KEY]: newSettings });
+        console.log('[Settings] Settings saved:', newSettings);
+
+        // Notify all tabs about settings change
+        const tabs = await chrome.tabs.query({ url: '*://www.youtube.com/*' });
+        for (const tab of tabs) {
+            chrome.tabs.sendMessage(tab.id, {
+                type: 'SETTINGS_UPDATED',
+                settings: newSettings
+            }).catch(() => {
+                // Ignore errors for tabs without content script
+            });
+        }
+
         return true;
 
     } catch (error) {
@@ -325,9 +182,18 @@ async function saveSettings(settings) {
  */
 async function resetSettings() {
     try {
-        await chrome.storage.sync.set({ [SETTINGS_KEY]: DEFAULT_SETTINGS });
-        await chrome.storage.local.set({ [CACHE_TTL_KEY]: DEFAULT_SETTINGS.cacheTTL });
+        await chrome.storage.local.set({ [SETTINGS_KEY]: { ...DEFAULT_SETTINGS } });
         console.log('[Settings] Settings reset to defaults');
+
+        // Notify all tabs
+        const tabs = await chrome.tabs.query({ url: '*://www.youtube.com/*' });
+        for (const tab of tabs) {
+            chrome.tabs.sendMessage(tab.id, {
+                type: 'SETTINGS_UPDATED',
+                settings: DEFAULT_SETTINGS
+            }).catch(() => {});
+        }
+
         return true;
     } catch (error) {
         console.error('[Settings] Error resetting settings:', error);
@@ -336,204 +202,147 @@ async function resetSettings() {
 }
 
 /**
- * Message handler for content script requests
+ * Message handler for content scripts and popup
  */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log('[Background] Received message:', message.type);
 
-    // Handle async operations
-    (async () => {
-        try {
-            switch (message.type) {
-                case 'CHECK_AUTH':
-                    // Check if user is authenticated (non-interactive)
-                    const status = await checkAuthStatus();
-                    sendResponse({ success: true, data: status });
-                    break;
-
-                case 'GET_AUTH_TOKEN':
-                    // Get token (non-interactive by default)
-                    const interactive = message.interactive || false;
-                    const token = await getAuthToken(interactive);
-                    sendResponse({
-                        success: !!token,
-                        token: token,
-                        needsAuth: !token
-                    });
-                    break;
-
-                case 'SIGN_IN':
-                    // Trigger interactive sign-in flow
-                    const authResult = await triggerInteractiveAuth();
-                    sendResponse(authResult);
-                    break;
-
-                case 'SIGN_OUT':
-                    // Revoke token and clear cache
-                    await revokeAuthToken();
-                    sendResponse({ success: true });
-                    break;
-
-                case 'GET_WATCH_LATER':
-                    // Fetch Watch Later playlist with caching
-                    try {
-                        const forceRefresh = message.forceRefresh || false;
-                        const maxResults = message.maxResults || 10;
-
-                        const result = await getWatchLaterWithCache(forceRefresh, maxResults);
-
-                        sendResponse({
-                            success: true,
-                            items: result.items,
-                            count: result.items.length,
-                            fromCache: result.fromCache,
-                            timestamp: result.timestamp
-                        });
-                    } catch (error) {
-                        console.error('[Background] Error fetching Watch Later:', error);
-
-                        // Check if it's an auth error
-                        if (error.message?.includes('Authentication failed') ||
-                            error.message?.includes('Not authenticated')) {
-                            // Clear cached token and request re-auth
-                            cachedToken = null;
-                            tokenExpiryTime = null;
-                            sendResponse({
-                                success: false,
-                                needsAuth: true,
-                                error: error.message
-                            });
-                        } else {
-                            sendResponse({
-                                success: false,
-                                error: error.message
-                            });
-                        }
-                    }
-                    break;
-
-                case 'REFRESH_CACHE':
-                    // Force refresh cache
-                    try {
-                        const maxResults = message.maxResults || 10;
-                        const result = await getWatchLaterWithCache(true, maxResults);
-
-                        sendResponse({
-                            success: true,
-                            items: result.items,
-                            count: result.items.length,
-                            refreshed: true
-                        });
-                    } catch (error) {
-                        console.error('[Background] Error refreshing cache:', error);
-                        sendResponse({
-                            success: false,
-                            error: error.message
-                        });
-                    }
-                    break;
-
-                case 'CLEAR_CACHE':
-                    // Clear cached data
-                    const cleared = await clearCache();
-                    sendResponse({ success: cleared });
-                    break;
-
-                case 'GET_SETTINGS':
-                    // Get user settings
-                    const settings = await getSettings();
+    // Handle different message types
+    switch (message.type) {
+        case 'GET_WATCH_LATER':
+            // Get Watch Later data from storage
+            getWatchLaterData().then(data => {
+                if (data && data.videos) {
+                    const settings = message.settings || { itemCount: 5 };
+                    const videos = data.videos.slice(0, settings.itemCount || 5);
+                    
                     sendResponse({
                         success: true,
-                        settings: settings
+                        videos: videos,
+                        timestamp: data.timestamp,
+                        fromCache: true
                     });
-                    break;
-
-                case 'SAVE_SETTINGS':
-                    // Save user settings
-                    if (!message.settings) {
-                        sendResponse({
-                            success: false,
-                            error: 'Settings object required'
-                        });
-                        break;
-                    }
-
-                    const saved = await saveSettings(message.settings);
-                    if (saved) {
-                        // Notify all tabs about settings change
-                        const tabs = await chrome.tabs.query({ url: '*://www.youtube.com/*' });
-                        tabs.forEach(tab => {
-                            chrome.tabs.sendMessage(tab.id, {
-                                type: 'SETTINGS_UPDATED',
-                                settings: message.settings
-                            }).catch(() => {
-                                // Tab might not have content script loaded, ignore error
-                            });
-                        });
-                    }
-
+                } else {
                     sendResponse({
-                        success: saved,
-                        settings: saved ? message.settings : null
+                        success: false,
+                        error: 'No data available',
+                        needsRefresh: true,
+                        message: 'Visit your Watch Later page to load videos'
                     });
-                    break;
+                }
+            }).catch(error => {
+                sendResponse({
+                    success: false,
+                    error: error.message
+                });
+            });
+            return true; // Keep channel open for async response
 
-                case 'RESET_SETTINGS':
-                    // Reset settings to defaults
-                    const reset = await resetSettings();
-                    if (reset) {
-                        // Notify all tabs about settings reset
-                        const tabs = await chrome.tabs.query({ url: '*://www.youtube.com/*' });
-                        tabs.forEach(tab => {
-                            chrome.tabs.sendMessage(tab.id, {
-                                type: 'SETTINGS_UPDATED',
-                                settings: DEFAULT_SETTINGS
-                            }).catch(() => {
-                                // Tab might not have content script loaded, ignore error
-                            });
-                        });
-                    }
+        case 'REFRESH_WATCH_LATER':
+            // Trigger refresh by opening Watch Later page
+            refreshWatchLaterData().then(result => {
+                sendResponse(result);
+            }).catch(error => {
+                sendResponse({
+                    success: false,
+                    error: error.message
+                });
+            });
+            return true;
 
-                    sendResponse({
-                        success: reset,
-                        settings: reset ? DEFAULT_SETTINGS : null
-                    });
-                    break;
+        case 'CLEAR_CACHE':
+            // Clear cached data
+            clearData().then(success => {
+                sendResponse({ success });
+            }).catch(error => {
+                sendResponse({
+                    success: false,
+                    error: error.message
+                });
+            });
+            return true;
 
-                default:
-                    console.warn('[Background] Unknown message type:', message.type);
-                    sendResponse({ success: false, error: 'Unknown message type' });
-            }
-        } catch (error) {
-            console.error('[Background] Error handling message:', error);
-            sendResponse({ success: false, error: error.message });
-        }
-    })();
+        case 'GET_SETTINGS':
+            // Get current settings
+            getSettings().then(settings => {
+                sendResponse({
+                    success: true,
+                    settings: settings
+                });
+            }).catch(error => {
+                sendResponse({
+                    success: false,
+                    error: error.message,
+                    settings: DEFAULT_SETTINGS
+                });
+            });
+            return true;
 
-    // Return true to indicate async response
-    return true;
-});
+        case 'SAVE_SETTINGS':
+            // Save settings
+            saveSettings(message.settings).then(success => {
+                sendResponse({ success });
+            }).catch(error => {
+                sendResponse({
+                    success: false,
+                    error: error.message
+                });
+            });
+            return true;
 
-/**
- * Extension installation/update handler
- */
-chrome.runtime.onInstalled.addListener(async (details) => {
-    console.log('[Background] Extension installed/updated:', details.reason);
+        case 'RESET_SETTINGS':
+            // Reset to defaults
+            resetSettings().then(success => {
+                sendResponse({ success });
+            }).catch(error => {
+                sendResponse({
+                    success: false,
+                    error: error.message
+                });
+            });
+            return true;
 
-    if (details.reason === 'install') {
-        console.log('[Background] First install - initializing defaults');
-        // Initialize default settings on first install
-        await saveSettings(DEFAULT_SETTINGS);
-    } else if (details.reason === 'update') {
-        console.log('[Background] Updated from version:', details.previousVersion);
-        // Ensure new settings fields are present
-        const currentSettings = await getSettings();
-        await saveSettings(currentSettings);
+        case 'HAS_DATA':
+            // Check if data exists
+            hasValidData().then(hasData => {
+                sendResponse({
+                    success: true,
+                    hasData: hasData
+                });
+            }).catch(error => {
+                sendResponse({
+                    success: false,
+                    error: error.message
+                });
+            });
+            return true;
+
+        case 'WATCH_LATER_UPDATED':
+            // Notify from scraper that data was updated
+            console.log(`[Background] Watch Later data updated: ${message.count} videos`);
+            
+            // Notify all YouTube tabs to refresh
+            chrome.tabs.query({ url: '*://www.youtube.com/*' }).then(tabs => {
+                for (const tab of tabs) {
+                    chrome.tabs.sendMessage(tab.id, {
+                        type: 'DATA_REFRESHED',
+                        count: message.count
+                    }).catch(() => {});
+                }
+            });
+            
+            sendResponse({ success: true });
+            return false;
+
+        default:
+            console.warn('[Background] Unknown message type:', message.type);
+            sendResponse({
+                success: false,
+                error: 'Unknown message type'
+            });
+            return false;
     }
 });
 
-/**
- * Service worker startup
- */
-console.log('[Background] Service worker started');
-console.log('[Background] Ready to handle authentication requests');
+// Log when service worker starts
+console.log('[Background] Service worker initialized (DOM scraping mode)');

@@ -209,25 +209,16 @@ async function injectShelf() {
     console.log('[WLI] Starting shelf injection...');
 
     try {
-        // Check authentication first
-        const authStatus = await chrome.runtime.sendMessage({ type: 'CHECK_AUTH' });
-
-        if (!authStatus.success || authStatus.data.needsAuth) {
-            console.log('[WLI] Not authenticated, showing sign-in prompt');
-            injectAuthPrompt(feedContainer);
-            return;
-        }
-
-        // Fetch Watch Later items
+        // Fetch Watch Later items from scraped data
         const response = await chrome.runtime.sendMessage({
             type: 'GET_WATCH_LATER',
-            maxResults: currentSettings.itemCount || 5
+            settings: currentSettings
         });
 
         if (!response.success) {
-            if (response.needsAuth) {
-                console.log('[WLI] Auth required, showing sign-in prompt');
-                injectAuthPrompt(feedContainer);
+            if (response.needsRefresh) {
+                console.log('[WLI] No data available yet, showing prompt to visit Watch Later');
+                injectFirstTimePrompt(feedContainer, response.message);
             } else {
                 console.error('[WLI] Error fetching playlist:', response.error);
                 injectErrorState(feedContainer, response.error);
@@ -235,10 +226,11 @@ async function injectShelf() {
             return;
         }
 
-        console.log(`[WLI] Got ${response.count} items (from cache: ${response.fromCache})`);
+        const videos = response.videos || [];
+        console.log(`[WLI] Got ${videos.length} videos (from cache: ${response.fromCache})`);
 
         // Handle empty playlist
-        if (response.count === 0) {
+        if (videos.length === 0) {
             if (currentSettings.showEmptyState) {
                 console.log('[WLI] Playlist is empty, showing empty state');
                 injectEmptyState(feedContainer);
@@ -248,8 +240,7 @@ async function injectShelf() {
             return;
         }
 
-        // Create and inject shelf
-        const shelf = createShelf(response.items);
+        const shelf = createShelf(videos);
         insertShelfSafely(feedContainer, shelf);
 
         shelfInjected = true;
@@ -570,6 +561,31 @@ function injectAuthPrompt(feedContainer) {
         }
     });
 
+    shelfInjected = true;
+}
+
+/**
+ * Inject first-time prompt (no data scraped yet)
+ * @param {Element} feedContainer
+ * @param {string} customMessage - Optional custom message
+ */
+function injectFirstTimePrompt(feedContainer, customMessage) {
+    const shelf = document.createElement('div');
+    shelf.id = WATCH_LATER_SHELF_ID;
+    shelf.className = 'wli-shelf wli-first-time-prompt';
+
+    const message = document.createElement('div');
+    message.className = 'wli-message';
+    message.innerHTML = `
+        <h3>Welcome to Watch Later in Home Feed!</h3>
+        <p>${customMessage || 'Visit your Watch Later page once to load your videos'}</p>
+        <a href="https://www.youtube.com/playlist?list=WL" class="wli-sign-in-button" style="display: inline-block; text-decoration: none;">
+            Go to Watch Later
+        </a>
+    `;
+
+    shelf.appendChild(message);
+    insertShelfSafely(feedContainer, shelf);
     shelfInjected = true;
 }
 

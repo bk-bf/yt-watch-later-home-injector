@@ -1,21 +1,11 @@
 {
     "manifest_version": 3,
     "name": "YT Watch Later in Home Feed",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "description": "Surface your YouTube Watch Later playlist as a native-looking horizontal shelf at the top of the YouTube homepage.",
     "permissions": [
-        "identity",
         "storage"
     ],
-    "host_permissions": [
-        "https://www.googleapis.com/*"
-    ],
-    "oauth2": {
-        "client_id": "YOUR_CLIENT_ID_HERE.apps.googleusercontent.com",
-        "scopes": [
-            "https://www.googleapis.com/auth/youtube.readonly"
-        ]
-    },
     "background": {
         "service_worker": "background.js"
     },
@@ -29,6 +19,18 @@
             ],
             "css": [
                 "injector.css"
+            ],
+            "run_at": "document_idle",
+            "exclude_matches": [
+                "*://www.youtube.com/playlist?list=WL*"
+            ]
+        },
+        {
+            "matches": [
+                "*://www.youtube.com/playlist?list=WL*"
+            ],
+            "js": [
+                "watchLaterScraper.js"
             ],
             "run_at": "document_idle"
         }
