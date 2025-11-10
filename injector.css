@@ -24,12 +24,17 @@
     --wli-spacing-2xl: 32px;
     --wli-spacing-3xl: 40px;
 
-    /* Card dimensions */
+    /* Card dimensions - default to compact size */
     --wli-card-width: 210px;
     --wli-card-width-md: 180px;
     --wli-card-width-sm: 160px;
     --wli-card-gap: var(--wli-spacing-md);
     --wli-card-radius: 12px;
+
+    /* Large size dimensions */
+    --wli-card-width-large: 360px;
+    --wli-card-width-large-md: 320px;
+    --wli-card-width-large-sm: 280px;
 
     /* Typography */
     --wli-font-family: "YouTube Sans", "Roboto", sans-serif;
@@ -49,26 +54,41 @@
     --wli-breakpoint-sm: 768px;
 }
 
-/* Main shelf container */
+/* Main shelf container - forces its own row */
 .wli-shelf {
     margin-bottom: var(--wli-spacing-3xl);
     padding: 0;
     isolation: isolate;
     /* Create new stacking context */
+    clear: both;
+    /* Ensure shelf appears on its own row */
+    display: block;
+    width: 100%;
+    position: relative;
 }
 
-/* Shelf header */
+/* Shelf header - matching YouTube Shorts style */
 .wli-shelf-header {
     margin-bottom: var(--wli-spacing-lg);
     padding: 0 var(--wli-spacing-xs);
 }
 
 .wli-shelf-title {
-    font-size: var(--wli-font-size-title);
-    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
     color: var(--wli-text-primary);
     margin: 0;
-    font-family: var(--wli-font-family);
+    font-family: "Roboto", "Arial", sans-serif;
+}
+
+.wli-shelf-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
 }
 
 /* Carousel container */
@@ -139,6 +159,11 @@
 
 .wli-video-card:active {
     transform: scale(0.98) translateZ(0);
+}
+
+/* Large thumbnail size variant */
+.wli-shelf.wli-size-large .wli-video-card {
+    width: var(--wli-card-width-large);
 }
 
 /* Thumbnail */
@@ -280,16 +305,26 @@
 }
 
 /* Responsive adjustments using CSS variables */
-@media (max-width: 1280px) {
+@media (max-width: 1400px) {
     :root {
         --wli-card-width: var(--wli-card-width-md);
+        --wli-card-width-large: var(--wli-card-width-large-md);
+    }
+}
+
+@media (max-width: 1024px) {
+    :root {
+        --wli-card-width: var(--wli-card-width-sm);
+        --wli-card-width-large: var(--wli-card-width-large-sm);
+        --wli-font-size-title: 18px;
+        --wli-card-gap: var(--wli-spacing-sm);
     }
 }
 
 @media (max-width: 768px) {
     :root {
-        --wli-card-width: var(--wli-card-width-sm);
-        --wli-font-size-title: 18px;
+        --wli-card-width: 240px;
+        --wli-card-width-large: 240px;
         --wli-card-gap: var(--wli-spacing-sm);
     }
 

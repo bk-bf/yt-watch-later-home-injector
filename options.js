@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS = {
     enabled: true,
     itemCount: 5,
     cacheTTL: 20,
+    thumbnailSize: 'compact',
     showEmptyState: true,
     autoRefresh: true
 };
@@ -24,6 +25,7 @@ async function loadSettings() {
             document.getElementById('enabled').checked = settings.enabled;
             document.getElementById('itemCount').value = settings.itemCount;
             document.getElementById('cacheTTL').value = settings.cacheTTL;
+            document.getElementById('thumbnailSize').value = settings.thumbnailSize || 'compact';
             document.getElementById('showEmptyState').checked = settings.showEmptyState;
             document.getElementById('autoRefresh').checked = settings.autoRefresh;
 
@@ -47,6 +49,7 @@ async function saveSettings() {
             enabled: document.getElementById('enabled').checked,
             itemCount: parseInt(document.getElementById('itemCount').value, 10),
             cacheTTL: parseInt(document.getElementById('cacheTTL').value, 10),
+            thumbnailSize: document.getElementById('thumbnailSize').value,
             showEmptyState: document.getElementById('showEmptyState').checked,
             autoRefresh: document.getElementById('autoRefresh').checked
         };

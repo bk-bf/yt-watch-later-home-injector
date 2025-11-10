@@ -283,7 +283,11 @@ function createShelf(items) {
     // Main shelf container
     const shelf = document.createElement('div');
     shelf.id = WATCH_LATER_SHELF_ID;
-    shelf.className = 'wli-shelf';
+
+    // Apply size class based on settings
+    const sizeClass = currentSettings?.thumbnailSize === 'large' ? 'wli-size-large' : 'wli-size-compact';
+    shelf.className = `wli-shelf ${sizeClass}`;
+
     shelf.setAttribute('role', 'region');
     shelf.setAttribute('aria-label', 'Watch Later Playlist');
 
@@ -299,7 +303,7 @@ function createShelf(items) {
 }
 
 /**
- * Create shelf header with title
+ * Create shelf header with title and icon
  * @returns {Element}
  */
 function createShelfHeader() {
@@ -308,8 +312,31 @@ function createShelfHeader() {
 
     const title = document.createElement('h2');
     title.className = 'wli-shelf-title';
-    title.textContent = 'In Your Watch Later';
 
+    // Create Watch Later icon (clock icon) using SVG with proper namespace
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute('viewBox', '0 0 24 24');
+    icon.setAttribute('width', '24');
+    icon.setAttribute('height', '24');
+    icon.setAttribute('fill', 'currentColor');
+    icon.className = 'wli-shelf-icon';
+
+    // Create SVG paths
+    const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path1.setAttribute('d', 'M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zM12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z');
+
+    const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path2.setAttribute('d', 'M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z');
+
+    icon.appendChild(path1);
+    icon.appendChild(path2);
+
+    // Create title text
+    const titleText = document.createElement('span');
+    titleText.textContent = 'Watch Later';
+
+    title.appendChild(icon);
+    title.appendChild(titleText);
     header.appendChild(title);
 
     return header;

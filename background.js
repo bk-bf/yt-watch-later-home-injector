@@ -14,6 +14,7 @@ const DEFAULT_SETTINGS = {
     enabled: true,
     itemCount: 5,
     cacheTTL: 20, // minutes
+    thumbnailSize: 'compact', // 'compact' (210px) or 'large' (360px)
     showEmptyState: true,
     autoRefresh: true // Auto-refresh when visiting Watch Later page
 };
@@ -81,7 +82,7 @@ async function clearData() {
 async function refreshWatchLaterData() {
     try {
         console.log('[Refresh] Opening Watch Later page to scrape data...');
-        
+
         // Open Watch Later page in a new tab (will trigger scraper)
         const tab = await chrome.tabs.create({
             url: 'https://www.youtube.com/playlist?list=WL',
@@ -191,7 +192,7 @@ async function resetSettings() {
             chrome.tabs.sendMessage(tab.id, {
                 type: 'SETTINGS_UPDATED',
                 settings: DEFAULT_SETTINGS
-            }).catch(() => {});
+            }).catch(() => { });
         }
 
         return true;
@@ -215,7 +216,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 if (data && data.videos) {
                     const settings = message.settings || { itemCount: 5 };
                     const videos = data.videos.slice(0, settings.itemCount || 5);
-                    
+
                     sendResponse({
                         success: true,
                         videos: videos,
@@ -320,17 +321,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case 'WATCH_LATER_UPDATED':
             // Notify from scraper that data was updated
             console.log(`[Background] Watch Later data updated: ${message.count} videos`);
-            
+
             // Notify all YouTube tabs to refresh
             chrome.tabs.query({ url: '*://www.youtube.com/*' }).then(tabs => {
                 for (const tab of tabs) {
                     chrome.tabs.sendMessage(tab.id, {
                         type: 'DATA_REFRESHED',
                         count: message.count
-                    }).catch(() => {});
+                    }).catch(() => { });
                 }
             });
-            
+
             sendResponse({ success: true });
             return false;
 
