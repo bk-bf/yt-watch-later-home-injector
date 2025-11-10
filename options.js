@@ -17,16 +17,16 @@ const DEFAULT_SETTINGS = {
 async function loadSettings() {
     try {
         const response = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
-        
+
         if (response.success) {
             const settings = response.settings;
-            
+
             document.getElementById('enabled').checked = settings.enabled;
             document.getElementById('itemCount').value = settings.itemCount;
             document.getElementById('cacheTTL').value = settings.cacheTTL;
             document.getElementById('showEmptyState').checked = settings.showEmptyState;
             document.getElementById('autoRefresh').checked = settings.autoRefresh;
-            
+
             console.log('[Options] Settings loaded:', settings);
         } else {
             console.error('[Options] Failed to load settings');
@@ -50,23 +50,23 @@ async function saveSettings() {
             showEmptyState: document.getElementById('showEmptyState').checked,
             autoRefresh: document.getElementById('autoRefresh').checked
         };
-        
+
         // Validate
         if (settings.itemCount < 3 || settings.itemCount > 10) {
             showStatus('Number of videos must be between 3 and 10', 'error');
             return;
         }
-        
+
         if (settings.cacheTTL < 1 || settings.cacheTTL > 1440) {
             showStatus('Cache duration must be between 1 and 1440 minutes', 'error');
             return;
         }
-        
+
         const response = await chrome.runtime.sendMessage({
             type: 'SAVE_SETTINGS',
             settings: settings
         });
-        
+
         if (response.success) {
             console.log('[Options] Settings saved:', settings);
             showStatus('Settings saved successfully!', 'success');
@@ -86,10 +86,10 @@ async function resetSettings() {
     if (!confirm('Reset all settings to defaults?')) {
         return;
     }
-    
+
     try {
         const response = await chrome.runtime.sendMessage({ type: 'RESET_SETTINGS' });
-        
+
         if (response.success) {
             console.log('[Options] Settings reset to defaults');
             await loadSettings(); // Reload form
@@ -110,7 +110,7 @@ function showStatus(message, type) {
     const statusEl = document.getElementById('status');
     statusEl.textContent = message;
     statusEl.className = `status ${type}`;
-    
+
     // Auto-hide after 3 seconds
     setTimeout(() => {
         statusEl.className = 'status';
@@ -122,11 +122,11 @@ function showStatus(message, type) {
  */
 document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
-    
+
     // Event listeners
     document.getElementById('save').addEventListener('click', saveSettings);
     document.getElementById('reset').addEventListener('click', resetSettings);
-    
+
     // Real-time validation
     document.getElementById('itemCount').addEventListener('input', (e) => {
         const value = parseInt(e.target.value, 10);
@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
             e.target.style.borderColor = '#ddd';
         }
     });
-    
+
     document.getElementById('cacheTTL').addEventListener('input', (e) => {
         const value = parseInt(e.target.value, 10);
         if (value < 1 || value > 1440) {

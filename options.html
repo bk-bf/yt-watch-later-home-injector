@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,31 +13,31 @@
             padding: 20px;
             background: #f5f5f5;
         }
-        
+
         .container {
             background: white;
             border-radius: 8px;
             padding: 30px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
-        
+
         h1 {
             margin-top: 0;
             color: #333;
             font-size: 24px;
         }
-        
+
         .setting {
             margin-bottom: 24px;
         }
-        
+
         label {
             display: block;
             margin-bottom: 8px;
             color: #555;
             font-weight: 500;
         }
-        
+
         input[type="number"],
         select {
             width: 100%;
@@ -45,17 +46,17 @@
             border-radius: 4px;
             font-size: 14px;
         }
-        
+
         input[type="checkbox"] {
             margin-right: 8px;
         }
-        
+
         .checkbox-label {
             display: flex;
             align-items: center;
             cursor: pointer;
         }
-        
+
         button {
             background: #3ea6ff;
             color: white;
@@ -66,39 +67,39 @@
             cursor: pointer;
             margin-right: 10px;
         }
-        
+
         button:hover {
             background: #2a9ae8;
         }
-        
+
         button.secondary {
             background: #e0e0e0;
             color: #333;
         }
-        
+
         button.secondary:hover {
             background: #d0d0d0;
         }
-        
+
         .status {
             margin-top: 20px;
             padding: 12px;
             border-radius: 4px;
             display: none;
         }
-        
+
         .status.success {
             background: #e8f5e9;
             color: #2e7d32;
             display: block;
         }
-        
+
         .status.error {
             background: #ffebee;
             color: #c62828;
             display: block;
         }
-        
+
         .description {
             font-size: 13px;
             color: #777;
@@ -106,10 +107,11 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>⚙️ Watch Later Feed Injector Settings</h1>
-        
+
         <div class="setting">
             <label for="enabled">
                 <div class="checkbox-label">
@@ -119,19 +121,19 @@
             </label>
             <div class="description">Show or hide the Watch Later shelf</div>
         </div>
-        
+
         <div class="setting">
             <label for="itemCount">Number of videos to show (3-10):</label>
             <input type="number" id="itemCount" min="3" max="10" value="5">
             <div class="description">How many videos to display in the carousel</div>
         </div>
-        
+
         <div class="setting">
             <label for="cacheTTL">Cache duration (minutes):</label>
             <input type="number" id="cacheTTL" min="1" max="1440" value="20">
             <div class="description">How long to cache data before refreshing (1-1440 minutes)</div>
         </div>
-        
+
         <div class="setting">
             <label for="showEmptyState">
                 <div class="checkbox-label">
@@ -141,7 +143,7 @@
             </label>
             <div class="description">Display a helpful message if you have no videos saved</div>
         </div>
-        
+
         <div class="setting">
             <label for="autoRefresh">
                 <div class="checkbox-label">
@@ -151,15 +153,16 @@
             </label>
             <div class="description">Automatically update data when you visit your Watch Later playlist</div>
         </div>
-        
+
         <div>
             <button id="save">Save Settings</button>
             <button id="reset" class="secondary">Reset to Defaults</button>
         </div>
-        
+
         <div id="status" class="status"></div>
     </div>
-    
+
     <script src="options.js"></script>
 </body>
+
 </html>
