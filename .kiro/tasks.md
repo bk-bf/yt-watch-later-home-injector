@@ -68,7 +68,7 @@ Detect homepage feed and inject a shelf using MutationObserver without blocking 
   - Preserve native link behavior (anchors) so right-click and middle-click work as normal.
   - _Reqs: FR-3, FR-5, Accessibility_
 
-- [ ] 4.3 Thumbnails & lazy-loading
+- [x] 4.3 Thumbnails & lazy-loading
   - Use `loading="lazy"` for img and low-res placeholder if available.
   - Avoid heavy DOM paints; use CSS transform for horizontal scrolling where possible.
   - _Reqs: Performance, UI/DOM injection details_

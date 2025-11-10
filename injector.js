@@ -21,25 +21,25 @@ const WATCH_LATER_PLAYLIST_URL = 'https://www.youtube.com/playlist?list=WL';
  */
 async function init() {
     console.log('[WLI] Content script loaded');
-    
+
     // Check if we're on YouTube homepage
     if (!isHomepage()) {
         console.log('[WLI] Not on homepage, skipping injection');
         return;
     }
-    
+
     isYouTubeHomepage = true;
     console.log('[WLI] On YouTube homepage, initializing...');
-    
+
     // Load settings
     await loadSettings();
-    
+
     // Check if shelf is enabled
     if (!currentSettings?.enabled) {
         console.log('[WLI] Shelf is disabled in settings');
         return;
     }
-    
+
     // Wait for feed container to be ready (non-blocking)
     waitForFeedContainer()
         .then(() => {
@@ -59,17 +59,17 @@ async function init() {
 function isHomepage() {
     const url = window.location.href;
     const pathname = window.location.pathname;
-    
+
     // Check if we're in mock testing environment
     if (url.includes('mock-youtube.html') || document.title.includes('Mock YouTube')) {
         console.log('[WLI] Mock page detected, treating as homepage');
         return true;
     }
-    
+
     // Match homepage patterns
-    return pathname === '/' || 
-           pathname === '/feed/explore' ||
-           (pathname === '' && url.includes('youtube.com'));
+    return pathname === '/' ||
+        pathname === '/feed/explore' ||
+        (pathname === '' && url.includes('youtube.com'));
 }
 
 /**
@@ -105,25 +105,25 @@ async function loadSettings() {
 function waitForFeedContainer() {
     return new Promise((resolve, reject) => {
         let attempts = 0;
-        
+
         const checkFeed = () => {
             const feedContainer = document.querySelector(FEED_CONTAINER_SELECTOR);
-            
+
             if (feedContainer) {
                 console.log('[WLI] Feed container found');
                 resolve(feedContainer);
                 return;
             }
-            
+
             attempts++;
             if (attempts >= FEED_CHECK_MAX_ATTEMPTS) {
                 reject(new Error('Feed container not found after timeout'));
                 return;
             }
-            
+
             setTimeout(checkFeed, FEED_CHECK_INTERVAL);
         };
-        
+
         checkFeed();
     });
 }
@@ -136,21 +136,21 @@ function setupNavigationObserver() {
     if (observer) {
         observer.disconnect();
     }
-    
+
     // Watch for URL changes (YouTube SPA navigation)
     let lastUrl = window.location.href;
-    
+
     observer = new MutationObserver(() => {
         const currentUrl = window.location.href;
-        
+
         // URL changed - check if we're still on homepage
         if (currentUrl !== lastUrl) {
             lastUrl = currentUrl;
             console.log('[WLI] Navigation detected:', currentUrl);
-            
+
             const wasHomepage = isYouTubeHomepage;
             isYouTubeHomepage = isHomepage();
-            
+
             if (isYouTubeHomepage && !wasHomepage) {
                 // Navigated to homepage
                 console.log('[WLI] Navigated to homepage, re-injecting shelf');
@@ -162,7 +162,7 @@ function setupNavigationObserver() {
                 removeShelf();
             }
         }
-        
+
         // Check if shelf was removed (feed re-render)
         if (isYouTubeHomepage && shelfInjected) {
             const existingShelf = document.getElementById(WATCH_LATER_SHELF_ID);
@@ -173,13 +173,13 @@ function setupNavigationObserver() {
             }
         }
     });
-    
+
     // Observe the entire document for changes
     observer.observe(document.body, {
         childList: true,
         subtree: true
     });
-    
+
     console.log('[WLI] Navigation observer setup complete');
 }
 
@@ -192,38 +192,38 @@ async function injectShelf() {
         console.log('[WLI] Shelf already injected');
         return;
     }
-    
+
     // Check if settings allow injection
     if (!currentSettings?.enabled) {
         console.log('[WLI] Shelf disabled in settings');
         return;
     }
-    
+
     // Find feed container
     const feedContainer = document.querySelector(FEED_CONTAINER_SELECTOR);
     if (!feedContainer) {
         console.warn('[WLI] Feed container not found, cannot inject');
         return;
     }
-    
+
     console.log('[WLI] Starting shelf injection...');
-    
+
     try {
         // Check authentication first
         const authStatus = await chrome.runtime.sendMessage({ type: 'CHECK_AUTH' });
-        
+
         if (!authStatus.success || authStatus.data.needsAuth) {
             console.log('[WLI] Not authenticated, showing sign-in prompt');
             injectAuthPrompt(feedContainer);
             return;
         }
-        
+
         // Fetch Watch Later items
         const response = await chrome.runtime.sendMessage({
             type: 'GET_WATCH_LATER',
             maxResults: currentSettings.itemCount || 5
         });
-        
+
         if (!response.success) {
             if (response.needsAuth) {
                 console.log('[WLI] Auth required, showing sign-in prompt');
@@ -234,9 +234,9 @@ async function injectShelf() {
             }
             return;
         }
-        
+
         console.log(`[WLI] Got ${response.count} items (from cache: ${response.fromCache})`);
-        
+
         // Handle empty playlist
         if (response.count === 0) {
             if (currentSettings.showEmptyState) {
@@ -247,14 +247,14 @@ async function injectShelf() {
             }
             return;
         }
-        
+
         // Create and inject shelf
         const shelf = createShelf(response.items);
         insertShelfSafely(feedContainer, shelf);
-        
+
         shelfInjected = true;
         console.log('[WLI] Shelf injected successfully');
-        
+
     } catch (error) {
         console.error('[WLI] Error during injection:', error);
         injectErrorState(feedContainer, error.message);
@@ -273,7 +273,7 @@ function insertShelfSafely(feedContainer, shelf) {
     if (existingShelf) {
         existingShelf.remove();
     }
-    
+
     // Insert as first child (before any feed content)
     if (feedContainer.firstChild) {
         feedContainer.insertBefore(shelf, feedContainer.firstChild);
@@ -295,15 +295,15 @@ function createShelf(items) {
     shelf.className = 'wli-shelf';
     shelf.setAttribute('role', 'region');
     shelf.setAttribute('aria-label', 'Watch Later Playlist');
-    
+
     // Shelf header
     const header = createShelfHeader();
     shelf.appendChild(header);
-    
+
     // Carousel container
     const carousel = createCarousel(items);
     shelf.appendChild(carousel);
-    
+
     return shelf;
 }
 
@@ -314,13 +314,13 @@ function createShelf(items) {
 function createShelfHeader() {
     const header = document.createElement('div');
     header.className = 'wli-shelf-header';
-    
+
     const title = document.createElement('h2');
     title.className = 'wli-shelf-title';
     title.textContent = 'In Your Watch Later';
-    
+
     header.appendChild(title);
-    
+
     return header;
 }
 
@@ -335,15 +335,15 @@ function createCarousel(items) {
     carousel.setAttribute('role', 'list');
     carousel.setAttribute('tabindex', '0');
     carousel.setAttribute('aria-label', 'Watch Later videos carousel');
-    
+
     items.forEach((item, index) => {
         const card = createVideoCard(item, index);
         carousel.appendChild(card);
     });
-    
+
     // Add keyboard navigation
     setupKeyboardNavigation(carousel);
-    
+
     return carousel;
 }
 
@@ -363,44 +363,66 @@ function createVideoCard(item, index) {
     card.setAttribute('data-video-id', item.videoId);
     card.setAttribute('data-card-index', index);
     card.tabIndex = 0; // Make cards keyboard focusable
-    
-    // Thumbnail container
+
+    // Thumbnail container with placeholder
     const thumbnailContainer = document.createElement('div');
     thumbnailContainer.className = 'wli-thumbnail-container';
     
+    // Low-res placeholder background (blurred default thumbnail)
+    if (item.thumbnails.default) {
+        thumbnailContainer.style.backgroundImage = `url(${item.thumbnails.default})`;
+        thumbnailContainer.classList.add('wli-thumbnail-loading');
+    }
+
+    // Main thumbnail image
     const thumbnail = document.createElement('img');
     thumbnail.src = item.thumbnails.medium || item.thumbnails.default;
     thumbnail.alt = item.title;
     thumbnail.className = 'wli-thumbnail';
     thumbnail.loading = 'lazy'; // Lazy load for performance
-    
+    thumbnail.decoding = 'async'; // Async decode to avoid blocking
+
     // Use high-res thumbnail as srcset if available
     if (item.thumbnails.high) {
         thumbnail.srcset = `${item.thumbnails.medium} 320w, ${item.thumbnails.high} 480w`;
+        thumbnail.sizes = '210px';
     }
     
-    thumbnailContainer.appendChild(thumbnail);
+    // Remove placeholder blur once image loads
+    thumbnail.addEventListener('load', () => {
+        thumbnailContainer.classList.remove('wli-thumbnail-loading');
+        thumbnailContainer.classList.add('wli-thumbnail-loaded');
+    }, { once: true });
     
+    // Handle load errors gracefully
+    thumbnail.addEventListener('error', () => {
+        thumbnailContainer.classList.remove('wli-thumbnail-loading');
+        thumbnailContainer.classList.add('wli-thumbnail-error');
+        console.warn('[WLI] Failed to load thumbnail for:', item.videoId);
+    }, { once: true });
+
+    thumbnailContainer.appendChild(thumbnail);
+
     // Video info
     const info = document.createElement('div');
     info.className = 'wli-video-info';
-    
+
     const title = document.createElement('div');
     title.className = 'wli-video-title';
     title.textContent = item.title;
     title.title = item.title; // Tooltip for truncated text
-    
+
     const channel = document.createElement('div');
     channel.className = 'wli-video-channel';
     channel.textContent = item.channelTitle;
-    
+
     info.appendChild(title);
     info.appendChild(channel);
-    
+
     // Assemble card
     card.appendChild(thumbnailContainer);
     card.appendChild(info);
-    
+
     return card;
 }
 
@@ -412,46 +434,46 @@ function createVideoCard(item, index) {
 function setupKeyboardNavigation(carousel) {
     let currentFocusIndex = -1;
     const cards = Array.from(carousel.querySelectorAll('.wli-video-card'));
-    
+
     if (cards.length === 0) return;
-    
+
     carousel.addEventListener('keydown', (e) => {
         // Arrow Left - navigate to previous card
         if (e.key === 'ArrowLeft') {
             e.preventDefault();
             navigateCards(cards, 'prev');
         }
-        
+
         // Arrow Right - navigate to next card
         else if (e.key === 'ArrowRight') {
             e.preventDefault();
             navigateCards(cards, 'next');
         }
-        
+
         // Home - jump to first card
         else if (e.key === 'Home') {
             e.preventDefault();
             focusCard(cards, 0);
         }
-        
+
         // End - jump to last card
         else if (e.key === 'End') {
             e.preventDefault();
             focusCard(cards, cards.length - 1);
         }
     });
-    
+
     // Track focus on cards
     cards.forEach((card, index) => {
         card.addEventListener('focus', () => {
             currentFocusIndex = index;
             scrollCardIntoView(carousel, card);
         });
-        
+
         // Handle click - native link behavior preserved
         // Middle-click, right-click, Ctrl+click all work naturally with <a> tags
     });
-    
+
     /**
      * Navigate to next or previous card
      * @param {Array} cards - Array of card elements
@@ -463,7 +485,7 @@ function setupKeyboardNavigation(carousel) {
             focusCard(cards, 0);
             return;
         }
-        
+
         let newIndex;
         if (direction === 'next') {
             newIndex = (currentFocusIndex + 1) % cards.length; // Wrap to start
@@ -471,10 +493,10 @@ function setupKeyboardNavigation(carousel) {
             newIndex = currentFocusIndex - 1;
             if (newIndex < 0) newIndex = cards.length - 1; // Wrap to end
         }
-        
+
         focusCard(cards, newIndex);
     }
-    
+
     /**
      * Focus a specific card
      * @param {Array} cards - Array of card elements
@@ -486,7 +508,7 @@ function setupKeyboardNavigation(carousel) {
             currentFocusIndex = index;
         }
     }
-    
+
     /**
      * Scroll card into view smoothly
      * @param {Element} carousel - Carousel container
@@ -495,11 +517,11 @@ function setupKeyboardNavigation(carousel) {
     function scrollCardIntoView(carousel, card) {
         const carouselRect = carousel.getBoundingClientRect();
         const cardRect = card.getBoundingClientRect();
-        
+
         // Calculate if card is out of view
         const isLeftOutOfView = cardRect.left < carouselRect.left;
         const isRightOutOfView = cardRect.right > carouselRect.right;
-        
+
         if (isLeftOutOfView || isRightOutOfView) {
             // Scroll card into view smoothly
             card.scrollIntoView({
@@ -519,17 +541,17 @@ function injectAuthPrompt(feedContainer) {
     const shelf = document.createElement('div');
     shelf.id = WATCH_LATER_SHELF_ID;
     shelf.className = 'wli-shelf wli-auth-prompt';
-    
+
     const message = document.createElement('div');
     message.className = 'wli-message';
     message.innerHTML = `
         <h3>Sign in to see your Watch Later videos</h3>
         <button class="wli-sign-in-button" id="wli-sign-in-btn">Sign In</button>
     `;
-    
+
     shelf.appendChild(message);
     insertShelfSafely(feedContainer, shelf);
-    
+
     // Add click handler for sign-in button
     document.getElementById('wli-sign-in-btn')?.addEventListener('click', async () => {
         console.log('[WLI] Sign-in button clicked');
@@ -547,7 +569,7 @@ function injectAuthPrompt(feedContainer) {
             console.error('[WLI] Error during sign-in:', error);
         }
     });
-    
+
     shelfInjected = true;
 }
 
@@ -559,14 +581,14 @@ function injectEmptyState(feedContainer) {
     const shelf = document.createElement('div');
     shelf.id = WATCH_LATER_SHELF_ID;
     shelf.className = 'wli-shelf wli-empty-state';
-    
+
     const message = document.createElement('div');
     message.className = 'wli-message';
     message.innerHTML = `
         <h3>Your Watch Later playlist is empty</h3>
         <p>Save videos to watch them later</p>
     `;
-    
+
     shelf.appendChild(message);
     insertShelfSafely(feedContainer, shelf);
     shelfInjected = true;
@@ -581,7 +603,7 @@ function injectErrorState(feedContainer, errorMessage) {
     const shelf = document.createElement('div');
     shelf.id = WATCH_LATER_SHELF_ID;
     shelf.className = 'wli-shelf wli-error-state';
-    
+
     const message = document.createElement('div');
     message.className = 'wli-message';
     message.innerHTML = `
@@ -589,10 +611,10 @@ function injectErrorState(feedContainer, errorMessage) {
         <p>${errorMessage}</p>
         <button class="wli-retry-button" id="wli-retry-btn">Retry</button>
     `;
-    
+
     shelf.appendChild(message);
     insertShelfSafely(feedContainer, shelf);
-    
+
     // Add click handler for retry button
     document.getElementById('wli-retry-btn')?.addEventListener('click', () => {
         console.log('[WLI] Retry button clicked');
@@ -600,7 +622,7 @@ function injectErrorState(feedContainer, errorMessage) {
         removeShelf();
         injectShelf();
     });
-    
+
     shelfInjected = true;
 }
 
@@ -623,7 +645,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'SETTINGS_UPDATED') {
         console.log('[WLI] Settings updated:', message.settings);
         currentSettings = message.settings;
-        
+
         // Re-inject shelf with new settings
         if (isYouTubeHomepage) {
             shelfInjected = false;

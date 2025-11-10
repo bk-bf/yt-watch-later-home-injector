@@ -6,12 +6,12 @@
 // Only create mock if chrome.runtime doesn't exist (i.e., we're in mock-youtube.html)
 if (typeof chrome === 'undefined' || !chrome.runtime) {
     console.log('[Mock] Creating mock Chrome API');
-    
+
     window.chrome = {
         runtime: {
-            sendMessage: async function(message) {
+            sendMessage: async function (message) {
                 console.log('[Mock] Message sent:', message.type, message);
-                
+
                 // Simulate different responses based on message type
                 switch (message.type) {
                     case 'GET_SETTINGS':
@@ -24,7 +24,7 @@ if (typeof chrome === 'undefined' || !chrome.runtime) {
                                 showEmptyState: true
                             }
                         };
-                    
+
                     case 'CHECK_AUTH':
                         return {
                             success: true,
@@ -33,7 +33,7 @@ if (typeof chrome === 'undefined' || !chrome.runtime) {
                                 needsAuth: false
                             }
                         };
-                    
+
                     case 'GET_WATCH_LATER':
                         // Return mock playlist items
                         return {
@@ -104,7 +104,7 @@ if (typeof chrome === 'undefined' || !chrome.runtime) {
                             fromCache: false,
                             timestamp: Date.now()
                         };
-                    
+
                     case 'SIGN_IN':
                         // Simulate successful sign-in
                         await new Promise(resolve => setTimeout(resolve, 500));
@@ -113,7 +113,7 @@ if (typeof chrome === 'undefined' || !chrome.runtime) {
                             token: 'mock_token_12345',
                             error: null
                         };
-                    
+
                     case 'REFRESH_CACHE':
                         // Same as GET_WATCH_LATER but with refreshed: true
                         const watchLaterResponse = await this.sendMessage({ type: 'GET_WATCH_LATER' });
@@ -121,7 +121,7 @@ if (typeof chrome === 'undefined' || !chrome.runtime) {
                             ...watchLaterResponse,
                             refreshed: true
                         };
-                    
+
                     default:
                         console.warn('[Mock] Unknown message type:', message.type);
                         return {
@@ -130,9 +130,9 @@ if (typeof chrome === 'undefined' || !chrome.runtime) {
                         };
                 }
             },
-            
+
             onMessage: {
-                addListener: function(callback) {
+                addListener: function (callback) {
                     console.log('[Mock] Message listener added');
                     // Store callback for potential future use
                     window._mockMessageListeners = window._mockMessageListeners || [];
@@ -141,7 +141,7 @@ if (typeof chrome === 'undefined' || !chrome.runtime) {
             }
         }
     };
-    
+
     console.log('[Mock] Mock Chrome API ready');
     console.log('[Mock] To test different states, modify the mock responses in mockChromeApi.js');
 }
@@ -153,7 +153,7 @@ function simulateSettingsUpdate(newSettings) {
             listener({
                 type: 'SETTINGS_UPDATED',
                 settings: newSettings
-            }, {}, () => {});
+            }, {}, () => { });
         });
     }
 }
@@ -161,9 +161,9 @@ function simulateSettingsUpdate(newSettings) {
 // Expose helper functions for testing in console
 window._wliMock = {
     // Test auth prompt
-    testAuthPrompt: function() {
+    testAuthPrompt: function () {
         const originalCheck = chrome.runtime.sendMessage;
-        chrome.runtime.sendMessage = async function(msg) {
+        chrome.runtime.sendMessage = async function (msg) {
             if (msg.type === 'CHECK_AUTH') {
                 return { success: true, data: { authenticated: false, needsAuth: true } };
             }
@@ -172,11 +172,11 @@ window._wliMock = {
         console.log('[Mock] Auth state set to: needs auth');
         console.log('[Mock] Reload page to see auth prompt');
     },
-    
+
     // Test empty playlist
-    testEmptyPlaylist: function() {
+    testEmptyPlaylist: function () {
         const originalGet = chrome.runtime.sendMessage;
-        chrome.runtime.sendMessage = async function(msg) {
+        chrome.runtime.sendMessage = async function (msg) {
             if (msg.type === 'GET_WATCH_LATER') {
                 return { success: true, items: [], count: 0, fromCache: false, timestamp: Date.now() };
             }
@@ -185,11 +185,11 @@ window._wliMock = {
         console.log('[Mock] Playlist set to: empty');
         console.log('[Mock] Reload page to see empty state');
     },
-    
+
     // Test error state
-    testError: function() {
+    testError: function () {
         const originalGet = chrome.runtime.sendMessage;
-        chrome.runtime.sendMessage = async function(msg) {
+        chrome.runtime.sendMessage = async function (msg) {
             if (msg.type === 'GET_WATCH_LATER') {
                 return { success: false, error: 'Network error: Could not connect to API' };
             }
@@ -198,9 +198,9 @@ window._wliMock = {
         console.log('[Mock] API set to: error state');
         console.log('[Mock] Reload page to see error state');
     },
-    
+
     // Reset to normal state
-    reset: function() {
+    reset: function () {
         location.reload();
     }
 };
