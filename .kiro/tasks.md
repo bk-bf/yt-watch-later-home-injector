@@ -43,7 +43,7 @@ Implement chrome.identity flow and a small API wrapper to call YouTube Data API 
 ### 3. Background caching & messaging
 Caching and message-routing between background and content script.
 
-- [ ] 3.1 Cache layer in service worker
+- [x] 3.1 Cache layer in service worker
   - Use `chrome.storage.local` to store fetched playlist metadata and a timestamp.
   - Default TTL: 20 minutes (configurable). Return cached data when still valid; otherwise fetch and update cache.
   - _Reqs: FR-7, Caching strategy_
