@@ -48,7 +48,7 @@ Caching and message-routing between background and content script.
   - Default TTL: 20 minutes (configurable). Return cached data when still valid; otherwise fetch and update cache.
   - _Reqs: FR-7, Caching strategy_
 
-- [ ] 3.2 Runtime messaging
+- [x] 3.2 Runtime messaging
   - Implement `chrome.runtime.onMessage` handlers to serve content-script requests for playlist items and settings.
   - Support a "refresh" message that forces API fetch and cache update.
   - _Reqs: Components and responsibilities_
