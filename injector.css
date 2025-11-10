@@ -1,36 +1,84 @@
 /**
  * Watch Later Feed Injector - Styles
  * Scoped with 'wli-' prefix to avoid conflicts with YouTube styles
+ * Uses CSS variables for maintainable, responsive design
  */
+
+/* CSS Variables for theming and spacing */
+:root {
+    /* Colors */
+    --wli-primary-color: #3ea6ff;
+    --wli-text-primary: #f1f1f1;
+    --wli-text-secondary: #aaaaaa;
+    --wli-bg-primary: #0f0f0f;
+    --wli-bg-secondary: #212121;
+    --wli-bg-overlay: rgba(255, 255, 255, 0.05);
+    --wli-bg-hover: rgba(255, 255, 255, 0.1);
+
+    /* Spacing */
+    --wli-spacing-xs: 4px;
+    --wli-spacing-sm: 8px;
+    --wli-spacing-md: 12px;
+    --wli-spacing-lg: 16px;
+    --wli-spacing-xl: 24px;
+    --wli-spacing-2xl: 32px;
+    --wli-spacing-3xl: 40px;
+
+    /* Card dimensions */
+    --wli-card-width: 210px;
+    --wli-card-width-md: 180px;
+    --wli-card-width-sm: 160px;
+    --wli-card-gap: var(--wli-spacing-md);
+    --wli-card-radius: 12px;
+
+    /* Typography */
+    --wli-font-family: "YouTube Sans", "Roboto", sans-serif;
+    --wli-font-size-title: 20px;
+    --wli-font-size-base: 14px;
+    --wli-font-size-small: 12px;
+
+    /* Transitions */
+    --wli-transition-fast: 0.2s ease-out;
+    --wli-transition-smooth: 0.3s ease-in;
+
+    /* Z-index */
+    --wli-z-focus: 1;
+
+    /* Breakpoints (used in media queries) */
+    --wli-breakpoint-md: 1280px;
+    --wli-breakpoint-sm: 768px;
+}
 
 /* Main shelf container */
 .wli-shelf {
-    margin-bottom: 40px;
+    margin-bottom: var(--wli-spacing-3xl);
     padding: 0;
+    isolation: isolate;
+    /* Create new stacking context */
 }
 
 /* Shelf header */
 .wli-shelf-header {
-    margin-bottom: 16px;
-    padding: 0 4px;
+    margin-bottom: var(--wli-spacing-lg);
+    padding: 0 var(--wli-spacing-xs);
 }
 
 .wli-shelf-title {
-    font-size: 20px;
+    font-size: var(--wli-font-size-title);
     font-weight: 400;
-    color: #f1f1f1;
+    color: var(--wli-text-primary);
     margin: 0;
-    font-family: "YouTube Sans", "Roboto", sans-serif;
+    font-family: var(--wli-font-family);
 }
 
 /* Carousel container */
 .wli-carousel {
     display: flex;
-    gap: 12px;
+    gap: var(--wli-card-gap);
     overflow-x: auto;
     overflow-y: hidden;
     scroll-behavior: smooth;
-    padding: 4px 0;
+    padding: var(--wli-spacing-xs) 0;
     -webkit-overflow-scrolling: touch;
     position: relative;
     /* Use GPU acceleration for smooth scrolling */
@@ -50,23 +98,23 @@
 /* Focus outline for carousel container */
 .wli-carousel:focus {
     outline: 2px solid rgba(62, 166, 255, 0.5);
-    outline-offset: 4px;
-    border-radius: 8px;
+    outline-offset: var(--wli-spacing-xs);
+    border-radius: var(--wli-spacing-sm);
 }
 
 /* Video card */
 .wli-video-card {
     flex: 0 0 auto;
-    width: 210px;
+    width: var(--wli-card-width);
     text-decoration: none;
     color: inherit;
     cursor: pointer;
-    border-radius: 12px;
+    border-radius: var(--wli-card-radius);
     overflow: hidden;
     position: relative;
     /* Use transform for smooth animations (GPU accelerated) */
     transform: translateZ(0);
-    transition: transform 0.2s ease-out;
+    transition: transform var(--wli-transition-fast);
     backface-visibility: hidden;
     /* Optimize rendering for off-screen cards */
     contain: layout style paint;
@@ -78,14 +126,14 @@
 }
 
 .wli-video-card:focus {
-    outline: 3px solid #3ea6ff;
+    outline: 3px solid var(--wli-primary-color);
     outline-offset: 3px;
     transform: scale(1.02) translateZ(0);
-    z-index: 1;
+    z-index: var(--wli-z-focus);
 }
 
 .wli-video-card:focus-visible {
-    outline: 3px solid #3ea6ff;
+    outline: 3px solid var(--wli-primary-color);
     outline-offset: 3px;
 }
 
@@ -98,8 +146,8 @@
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 9;
-    background-color: #0f0f0f;
-    border-radius: 12px;
+    background-color: var(--wli-bg-primary);
+    border-radius: var(--wli-card-radius);
     overflow: hidden;
     /* Use background for low-res placeholder */
     background-size: cover;
@@ -150,7 +198,7 @@
 /* Fade in effect when image loads */
 .wli-thumbnail-loading .wli-thumbnail {
     opacity: 0;
-    transition: opacity 0.3s ease-in;
+    transition: opacity var(--wli-transition-smooth);
 }
 
 .wli-thumbnail-loaded .wli-thumbnail {
@@ -159,25 +207,25 @@
 
 /* Video info */
 .wli-video-info {
-    padding: 8px 4px 0;
+    padding: var(--wli-spacing-sm) var(--wli-spacing-xs) 0;
 }
 
 .wli-video-title {
-    font-size: 14px;
+    font-size: var(--wli-font-size-base);
     font-weight: 500;
-    color: #f1f1f1;
+    color: var(--wli-text-primary);
     line-height: 1.4;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-bottom: 4px;
+    margin-bottom: var(--wli-spacing-xs);
 }
 
 .wli-video-channel {
-    font-size: 12px;
-    color: #aaaaaa;
+    font-size: var(--wli-font-size-small);
+    color: var(--wli-text-secondary);
     line-height: 1.4;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -186,10 +234,10 @@
 
 /* Message states (auth prompt, empty, error) */
 .wli-message {
-    padding: 32px;
+    padding: var(--wli-spacing-2xl);
     text-align: center;
-    background-color: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
+    background-color: var(--wli-bg-overlay);
+    border-radius: var(--wli-card-radius);
     max-width: 600px;
     margin: 0 auto;
 }
@@ -197,28 +245,28 @@
 .wli-message h3 {
     font-size: 18px;
     font-weight: 400;
-    color: #f1f1f1;
-    margin: 0 0 12px 0;
+    color: var(--wli-text-primary);
+    margin: 0 0 var(--wli-spacing-md) 0;
 }
 
 .wli-message p {
-    font-size: 14px;
-    color: #aaaaaa;
+    font-size: var(--wli-font-size-base);
+    color: var(--wli-text-secondary);
     margin: 0 0 20px 0;
 }
 
 /* Buttons */
 .wli-sign-in-button,
 .wli-retry-button {
-    background-color: #3ea6ff;
-    color: #0f0f0f;
+    background-color: var(--wli-primary-color);
+    color: var(--wli-bg-primary);
     border: none;
-    padding: 10px 24px;
-    font-size: 14px;
+    padding: 10px var(--wli-spacing-xl);
+    font-size: var(--wli-font-size-base);
     font-weight: 500;
     border-radius: 18px;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color var(--wli-transition-fast);
 }
 
 .wli-sign-in-button:hover,
@@ -231,20 +279,22 @@
     background-color: #2a9ae8;
 }
 
-/* Responsive adjustments */
+/* Responsive adjustments using CSS variables */
 @media (max-width: 1280px) {
-    .wli-video-card {
-        width: 180px;
+    :root {
+        --wli-card-width: var(--wli-card-width-md);
     }
 }
 
 @media (max-width: 768px) {
-    .wli-video-card {
-        width: 160px;
+    :root {
+        --wli-card-width: var(--wli-card-width-sm);
+        --wli-font-size-title: 18px;
+        --wli-card-gap: var(--wli-spacing-sm);
     }
 
-    .wli-shelf-title {
-        font-size: 18px;
+    .wli-message {
+        padding: var(--wli-spacing-xl);
     }
 }
 
@@ -257,27 +307,12 @@
 
 /* Dark mode support (YouTube is already dark, but just in case) */
 @media (prefers-color-scheme: light) {
-    .wli-shelf-title {
-        color: #0f0f0f;
-    }
-
-    .wli-video-title {
-        color: #0f0f0f;
-    }
-
-    .wli-video-channel {
-        color: #606060;
-    }
-
-    .wli-message {
-        background-color: rgba(0, 0, 0, 0.05);
-    }
-
-    .wli-message h3 {
-        color: #0f0f0f;
-    }
-
-    .wli-message p {
-        color: #606060;
+    :root {
+        --wli-text-primary: #0f0f0f;
+        --wli-text-secondary: #606060;
+        --wli-bg-primary: #ffffff;
+        --wli-bg-secondary: #f9f9f9;
+        --wli-bg-overlay: rgba(0, 0, 0, 0.05);
+        --wli-bg-hover: rgba(0, 0, 0, 0.1);
     }
 }

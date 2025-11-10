@@ -367,7 +367,7 @@ function createVideoCard(item, index) {
     // Thumbnail container with placeholder
     const thumbnailContainer = document.createElement('div');
     thumbnailContainer.className = 'wli-thumbnail-container';
-    
+
     // Low-res placeholder background (blurred default thumbnail)
     if (item.thumbnails.default) {
         thumbnailContainer.style.backgroundImage = `url(${item.thumbnails.default})`;
@@ -387,13 +387,13 @@ function createVideoCard(item, index) {
         thumbnail.srcset = `${item.thumbnails.medium} 320w, ${item.thumbnails.high} 480w`;
         thumbnail.sizes = '210px';
     }
-    
+
     // Remove placeholder blur once image loads
     thumbnail.addEventListener('load', () => {
         thumbnailContainer.classList.remove('wli-thumbnail-loading');
         thumbnailContainer.classList.add('wli-thumbnail-loaded');
     }, { once: true });
-    
+
     // Handle load errors gracefully
     thumbnail.addEventListener('error', () => {
         thumbnailContainer.classList.remove('wli-thumbnail-loading');

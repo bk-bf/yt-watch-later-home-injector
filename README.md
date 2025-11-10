@@ -8,14 +8,25 @@ A Chrome/Opera extension that surfaces your YouTube Watch Later playlist as a na
 - ⌨️ Keyboard accessible carousel with arrow navigation
 - 🎨 Native YouTube styling for seamless integration
 - 🔒 Privacy-focused: minimal permissions, no external data transmission
-- ⚡ Smart caching to reduce API calls
+- ⚡ Smart caching to reduce API calls (20-min default TTL)
+- 📱 Responsive design adapts to different screen sizes
+- 🚀 GPU-accelerated scrolling with progressive image loading
 
-## Development Setup
+## Quick Start
 
-### Prerequisites
+### For Production Use (Real YouTube)
 
+**See [SETUP.md](./SETUP.md)** for complete instructions on:
+1. Creating Google Cloud OAuth credentials
+2. Configuring the extension
+3. Loading it in Chrome/Opera
+4. Testing on actual YouTube
+
+### For Development (Mock Page)
+
+**Prerequisites:**
 - Chrome or Opera browser
-- (Optional) Google Cloud project with YouTube Data API v3 enabled for real API testing
+- No API credentials needed for mock testing
 
 ### Quick Start
 
@@ -90,42 +101,64 @@ The extension works without real OAuth credentials during initial development. T
 - [x] `manifest.json` - Extension manifest (MV3)
 - [x] `mock-youtube.html` - Dev harness for local testing
 - [x] `README.md` - Development documentation
-- [ ] `background.js` - Service worker (auth & API)
-- [ ] `injector.js` - Content script (injection logic)
-- [ ] `injector.css` - Styles for shelf
-- [ ] `youtubeApi.js` - API wrapper
+- [x] `background.js` - Service worker (auth & API)
+- [x] `injector.js` - Content script (injection logic)
+- [x] `injector.css` - Scoped styles with CSS variables
+- [x] `youtubeApi.js` - API wrapper with retry logic
+- [x] `mockChromeApi.js` - Mock Chrome API for local testing
+- [x] `mockData.js` - Sample playlist data
+- [x] `SETUP.md` - Production setup guide
 - [ ] `options.html` - Settings UI
 - [ ] `options.js` - Settings logic
 
 ## Permissions
 
 - `identity` - OAuth authentication via Chrome Identity API
-- `storage` - Cache playlist data locally
-- `https://www.googleapis.com/*` - YouTube Data API access
+- `storage` - Cache playlist data and user settings locally
+- `https://www.googleapis.com/*` - YouTube Data API v3 access
 
 ## Privacy
 
 - Only requests `youtube.readonly` scope (view-only access)
 - No data transmitted to external servers
-- Cache stored locally in browser only
+- Cache stored locally in browser only (`chrome.storage.local`)
 - No tracking or analytics
+- Open source - all code is auditable
 
-## Testing Strategy
+## Loading on Chrome/Opera
 
-1. **Unit tests** - API wrapper and cache logic (Jest)
-2. **Integration tests** - Mock page harness for DOM injection
-3. **Manual testing** - Real YouTube with different states (auth, empty, errors)
-4. **Accessibility** - Keyboard navigation and screen reader checks
+1. Open `chrome://extensions/` (or `opera://extensions/`)
+2. Enable **Developer mode** (toggle in top-right)
+3. Click **Load unpacked**
+4. Select this project folder
+5. Copy the **Extension ID** (needed for OAuth setup)
 
-## Roadmap
+For complete OAuth setup, see **[SETUP.md](./SETUP.md)**
 
-- [x] Manifest V3 skeleton
-- [ ] Authentication & API wrapper
-- [ ] Background caching & messaging
-- [ ] Content script injection
-- [ ] Styling & visual parity
-- [ ] Options page
-- [ ] Error handling
+## Implementation Status
+
+### Completed (Tasks 1-5)
+- [x] 1.1 - Manifest V3 with service worker
+- [x] 1.2 - Dev harness (mock-youtube.html)
+- [x] 2.1 - chrome.identity OAuth integration
+- [x] 2.2 - YouTube Data API wrapper
+- [x] 3.1 - Cache layer with TTL (20 min default)
+- [x] 3.2 - Runtime messaging (10 message types)
+- [x] 4.1 - Feed detection & robust injection
+- [x] 4.2 - Keyboard navigation (Arrow keys, Home/End)
+- [x] 4.3 - Progressive image loading with lazy loading
+- [x] 5.1 - Scoped CSS with variables
+- [x] 5.2 - Hover states & interactions
+
+### In Progress
+- [ ] 6.1 - Options page UI
+- [ ] 6.2 - Settings runtime behavior (partially complete)
+- [ ] 7.1 - Empty playlist state (partially complete)
+- [ ] 7.2 - Auth prompts (partially complete)
+
+### Pending
+- [ ] 8.1-8.3 - Testing & QA
+- [ ] 9.1-9.2 - Store submission prep
 - [ ] Tests & QA
 - [ ] Chrome Web Store submission
 
