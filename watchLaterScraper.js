@@ -4,7 +4,7 @@
  * Runs on *://www.youtube.com/playlist?list=WL
  */
 
-(function() {
+(function () {
     'use strict';
 
     console.log('[WL Scraper] Content script loaded on Watch Later page');
@@ -22,7 +22,7 @@
             }
 
             const data = window.ytInitialData;
-            
+
             // Navigate to playlist contents
             const contents = data?.contents?.twoColumnBrowseResultsRenderer?.tabs?.[0]
                 ?.tabRenderer?.content?.sectionListRenderer?.contents?.[0]
@@ -39,7 +39,7 @@
             // Parse each video item
             for (const item of contents) {
                 const videoRenderer = item.playlistVideoRenderer;
-                
+
                 // Skip continuation items or ads
                 if (!videoRenderer || !videoRenderer.videoId) {
                     continue;
@@ -55,8 +55,8 @@
                     thumbnails: videoRenderer.thumbnail?.thumbnails || [],
                     lengthText: videoRenderer.lengthText?.simpleText || '',
                     // Get best quality thumbnail
-                    thumbnail: videoRenderer.thumbnail?.thumbnails?.slice(-1)[0]?.url || 
-                               videoRenderer.thumbnail?.thumbnails?.[0]?.url || ''
+                    thumbnail: videoRenderer.thumbnail?.thumbnails?.slice(-1)[0]?.url ||
+                        videoRenderer.thumbnail?.thumbnails?.[0]?.url || ''
                 };
 
                 // Ensure we have at least videoId and title
@@ -155,7 +155,7 @@
             const currentUrl = location.href;
             if (currentUrl !== lastUrl) {
                 lastUrl = currentUrl;
-                
+
                 // Check if we're still on Watch Later page
                 if (currentUrl.includes('list=WL')) {
                     console.log('[WL Scraper] Navigation detected, re-scraping...');

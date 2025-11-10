@@ -76,7 +76,7 @@ Detect homepage feed and inject a shelf using MutationObserver without blocking 
 ### 5. Styling & visual parity
 Make the shelf visually match YouTube patterns while avoiding CSS collisions.
 
-- [ ] 5.1 Scoped CSS
+- [x] 5.1 Scoped CSS
   - Create `injector.css` with scoped classes prefixed `wli-`.
   - Use CSS variables for spacing and breakpoints to maintain responsive behavior.
   - _Reqs: Styling, Privacy & security (no external CSS leakage)_
